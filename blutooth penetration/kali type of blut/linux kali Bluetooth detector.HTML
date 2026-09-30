@@ -1,0 +1,2999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050b12">
+
+<title>KALI LINUX • BLE RADAR v5.0</title>
+
+<style>
+/* =========================================================
+   KALI LINUX BLE RADAR v5.0
+   ========================================================= */
+
+:root{
+  --kali-blue:#3677a8;
+  --kali-blue2:#4c91c5;
+  --kali-cyan:#72c7f5;
+  --kali-white:#e9f5ff;
+  --kali-dark:#05080c;
+  --kali-panel:#081019;
+  --kali-panel2:#0b151f;
+  --kali-border:#24577b;
+  --kali-muted:#6d8da4;
+  --kali-red:#ff5577;
+  --kali-yellow:#ffc857;
+  --glow:rgba(54,119,168,.55);
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Consolas,"Courier New",monospace;
+}
+
+html,body{
+  min-height:100%;
+}
+
+body{
+  background:
+    radial-gradient(circle at 50% 45%,
+      rgba(54,119,168,.10),
+      transparent 30%),
+    #030609;
+  color:var(--kali-white);
+  min-height:100vh;
+  padding:20px;
+  overflow-x:hidden;
+}
+
+/* =========================================================
+   BOOT SCREEN
+   ========================================================= */
+
+#bootScreen{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  background:
+    radial-gradient(circle at center,
+      rgba(54,119,168,.15),
+      transparent 35%),
+    #020508;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  transition:opacity 1s ease, visibility 1s ease;
+}
+
+#bootScreen.hidden{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.boot-grid{
+  position:absolute;
+  inset:0;
+  opacity:.12;
+  background-image:
+    linear-gradient(rgba(54,119,168,.25) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(54,119,168,.25) 1px,transparent 1px);
+  background-size:35px 35px;
+  animation:gridMove 12s linear infinite;
+}
+
+@keyframes gridMove{
+  from{transform:translateY(0)}
+  to{transform:translateY(35px)}
+}
+
+.boot-content{
+  width:min(650px,90%);
+  text-align:center;
+  position:relative;
+  z-index:2;
+}
+
+.boot-dragon{
+  width:120px;
+  height:120px;
+  object-fit:contain;
+  filter:
+    drop-shadow(0 0 12px rgba(54,119,168,.8))
+    drop-shadow(0 0 35px rgba(54,119,168,.4));
+  animation:
+    dragonPulse 2s ease-in-out infinite,
+    dragonFloat 3s ease-in-out infinite;
+}
+
+@keyframes dragonPulse{
+  0%,100%{
+    filter:
+      drop-shadow(0 0 8px rgba(54,119,168,.5))
+      drop-shadow(0 0 20px rgba(54,119,168,.25));
+  }
+  50%{
+    filter:
+      drop-shadow(0 0 18px rgba(114,199,245,.95))
+      drop-shadow(0 0 50px rgba(54,119,168,.6));
+  }
+}
+
+@keyframes dragonFloat{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
+}
+
+.boot-title{
+  margin-top:20px;
+  font-size:clamp(26px,6vw,48px);
+  font-weight:bold;
+  letter-spacing:8px;
+  color:#fff;
+  text-shadow:
+    0 0 8px var(--kali-cyan),
+    0 0 25px var(--kali-blue);
+}
+
+.boot-subtitle{
+  margin-top:10px;
+  color:var(--kali-cyan);
+  font-size:11px;
+  letter-spacing:3px;
+}
+
+.boot-terminal{
+  margin:30px auto 0;
+  text-align:left;
+  background:rgba(2,7,11,.85);
+  border:1px solid var(--kali-border);
+  padding:15px;
+  height:145px;
+  overflow:hidden;
+  box-shadow:
+    0 0 30px rgba(54,119,168,.15),
+    inset 0 0 30px rgba(54,119,168,.04);
+}
+
+.boot-line{
+  font-size:10px;
+  color:#8db4cc;
+  margin-bottom:7px;
+  opacity:0;
+  animation:bootLine .25s forwards;
+}
+
+.boot-line::before{
+  content:"[ OK ] ";
+  color:var(--kali-cyan);
+}
+
+@keyframes bootLine{
+  from{
+    opacity:0;
+    transform:translateX(-12px);
+  }
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+
+.progress-wrap{
+  margin-top:20px;
+  border:1px solid var(--kali-border);
+  padding:4px;
+  background:#03070a;
+}
+
+.progress{
+  height:8px;
+  width:0%;
+  background:linear-gradient(
+    90deg,
+    var(--kali-blue),
+    var(--kali-cyan),
+    #fff
+  );
+  box-shadow:0 0 15px var(--kali-blue);
+  transition:width .1s linear;
+}
+
+.boot-percent{
+  margin-top:8px;
+  color:var(--kali-cyan);
+  font-size:10px;
+}
+
+.boot-scan{
+  margin-top:20px;
+  font-size:9px;
+  color:#52768d;
+}
+
+/* =========================================================
+   BACKGROUND
+   ========================================================= */
+
+#matrix{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:-3;
+  opacity:.07;
+  pointer-events:none;
+}
+
+.kali-background{
+  position:fixed;
+  z-index:-2;
+  left:50%;
+  top:50%;
+  width:min(650px,75vw);
+  height:min(650px,75vw);
+  transform:translate(-50%,-50%);
+  background:
+    url("https://www.kali.org/images/kali-logo.svg")
+    center/contain no-repeat;
+  opacity:.055;
+  filter:
+    drop-shadow(0 0 30px rgba(54,119,168,.7));
+  pointer-events:none;
+  animation:bgPulse 5s ease-in-out infinite;
+}
+
+@keyframes bgPulse{
+  0%,100%{opacity:.035;transform:translate(-50%,-50%) scale(.96)}
+  50%{opacity:.07;transform:translate(-50%,-50%) scale(1)}
+}
+
+.scanlines{
+  position:fixed;
+  inset:0;
+  z-index:9998;
+  pointer-events:none;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,.012) 0,
+      rgba(255,255,255,.012) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+}
+
+/* =========================================================
+   MAIN TERMINAL
+   ========================================================= */
+
+.terminal{
+  position:relative;
+  z-index:1;
+  width:100%;
+  max-width:1650px;
+  margin:0 auto;
+  background:rgba(4,9,14,.94);
+  border:1px solid var(--kali-border);
+  box-shadow:
+    0 0 50px rgba(54,119,168,.18),
+    inset 0 0 50px rgba(54,119,168,.025);
+  backdrop-filter:blur(8px);
+}
+
+.terminal::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  pointer-events:none;
+  border:1px solid rgba(114,199,245,.08);
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.header{
+  min-height:75px;
+  padding:12px 18px;
+  border-bottom:1px solid var(--kali-border);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(54,119,168,.12),
+      transparent,
+      rgba(54,119,168,.06)
+    );
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:15px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.dragon{
+  width:46px;
+  height:46px;
+  object-fit:contain;
+  filter:
+    drop-shadow(0 0 8px rgba(54,119,168,.8));
+  animation:brandPulse 3s infinite;
+}
+
+@keyframes brandPulse{
+  50%{
+    filter:
+      drop-shadow(0 0 15px rgba(114,199,245,.9));
+  }
+}
+
+.title{
+  font-size:15px;
+  font-weight:bold;
+  letter-spacing:2px;
+  color:#fff;
+  text-shadow:0 0 10px rgba(114,199,245,.55);
+}
+
+.subtitle{
+  margin-top:4px;
+  color:var(--kali-muted);
+  font-size:8px;
+  letter-spacing:2px;
+}
+
+.status{
+  font-size:9px;
+  color:var(--kali-muted);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--kali-border);
+  padding:7px 10px;
+  background:rgba(54,119,168,.05);
+}
+
+.led{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#24333e;
+}
+
+.led.on{
+  background:var(--kali-cyan);
+  box-shadow:
+    0 0 8px var(--kali-cyan),
+    0 0 18px var(--kali-blue);
+  animation:blink 1s infinite;
+}
+
+@keyframes blink{
+  0%,100%{opacity:1}
+  50%{opacity:.3}
+}
+
+/* =========================================================
+   BODY / WARNING
+   ========================================================= */
+
+.body{
+  padding:20px;
+}
+
+.warning{
+  background:rgba(255,200,87,.055);
+  border:1px solid rgba(255,200,87,.45);
+  color:var(--kali-yellow);
+  padding:11px;
+  font-size:9px;
+  margin-bottom:16px;
+  line-height:1.7;
+}
+
+.warning strong{
+  color:#fff;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.controls{
+  display:flex;
+  gap:8px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+
+.btn{
+  position:relative;
+  overflow:hidden;
+  padding:10px 16px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(54,119,168,.18),
+      rgba(54,119,168,.06)
+    );
+  border:1px solid var(--kali-border);
+  color:#cdeeff;
+  font-size:9px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+  letter-spacing:1px;
+}
+
+.btn::after{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-100%;
+  width:70%;
+  height:100%;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.15),
+    transparent
+  );
+  transform:skewX(-20deg);
+}
+
+.btn:hover:not(:disabled)::after{
+  animation:buttonSweep .5s;
+}
+
+@keyframes buttonSweep{
+  to{left:140%}
+}
+
+.btn:hover:not(:disabled){
+  background:rgba(54,119,168,.28);
+  border-color:var(--kali-cyan);
+  color:#fff;
+  box-shadow:
+    0 0 15px rgba(54,119,168,.3);
+}
+
+.btn:active:not(:disabled){
+  transform:scale(.97);
+}
+
+.btn:disabled{
+  opacity:.3;
+  cursor:not-allowed;
+}
+
+.btn-danger{
+  border-color:rgba(255,85,119,.7);
+  color:#ff8da5;
+  background:rgba(255,85,119,.07);
+}
+
+.btn-danger:hover:not(:disabled){
+  border-color:var(--kali-red);
+  box-shadow:0 0 15px rgba(255,85,119,.25);
+}
+
+/* =========================================================
+   GRID
+   ========================================================= */
+
+.grid{
+  display:grid;
+  grid-template-columns:360px minmax(300px,1fr) 390px;
+  gap:15px;
+}
+
+@media(max-width:1400px){
+  .grid{
+    grid-template-columns:360px 1fr;
+  }
+
+  #radarPanel{
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:900px){
+  body{
+    padding:8px;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  #radarPanel{
+    grid-column:auto;
+  }
+
+  .body{
+    padding:12px;
+  }
+
+  .title{
+    font-size:12px;
+  }
+}
+
+/* =========================================================
+   PANELS
+   ========================================================= */
+
+.panel{
+  min-width:0;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(10,22,32,.96),
+      rgba(3,8,12,.98)
+    );
+  border:1px solid var(--kali-border);
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  box-shadow:
+    inset 0 0 30px rgba(54,119,168,.025);
+}
+
+.panel-title{
+  font-size:10px;
+  color:var(--kali-cyan);
+  margin-bottom:12px;
+  padding-bottom:8px;
+  border-bottom:1px solid rgba(54,119,168,.25);
+  letter-spacing:1.5px;
+}
+
+.device-info{
+  font-size:9px;
+  margin-bottom:15px;
+}
+
+.info-row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:7px 0;
+  border-bottom:1px solid rgba(54,119,168,.11);
+}
+
+.info-label{
+  color:var(--kali-muted);
+}
+
+.info-value{
+  color:#d8f2ff;
+  text-align:right;
+  max-width:65%;
+  word-break:break-all;
+}
+
+/* =========================================================
+   SERVICES
+   ========================================================= */
+
+.service-list{
+  flex:1;
+  overflow-y:auto;
+  max-height:600px;
+  border:1px solid rgba(54,119,168,.2);
+  padding:5px;
+}
+
+.service-list::-webkit-scrollbar,
+.log::-webkit-scrollbar{
+  width:5px;
+}
+
+.service-list::-webkit-scrollbar-thumb,
+.log::-webkit-scrollbar-thumb{
+  background:var(--kali-border);
+}
+
+.service-item{
+  background:rgba(7,19,28,.65);
+  border:1px solid rgba(54,119,168,.55);
+  margin-bottom:8px;
+  padding:10px;
+  transition:.2s;
+}
+
+.service-item:hover{
+  border-color:var(--kali-cyan);
+  box-shadow:0 0 12px rgba(54,119,168,.15);
+}
+
+.service-header{
+  font-size:10px;
+  color:#d9f4ff;
+  margin-bottom:8px;
+  font-weight:bold;
+}
+
+.service-uuid{
+  font-size:8px;
+  color:var(--kali-muted);
+  margin-bottom:8px;
+  word-break:break-all;
+}
+
+.char-list{
+  margin-left:10px;
+}
+
+.char-item{
+  background:#03080d;
+  border:1px solid rgba(54,119,168,.2);
+  padding:8px;
+  margin-bottom:6px;
+  font-size:9px;
+}
+
+.char-uuid{
+  color:var(--kali-cyan);
+  margin-bottom:5px;
+  word-break:break-all;
+}
+
+.char-props{
+  color:var(--kali-muted);
+  font-size:8px;
+  margin-bottom:6px;
+}
+
+.char-value{
+  color:#cfeeff;
+  background:rgba(54,119,168,.05);
+  border-left:2px solid var(--kali-blue);
+  padding:6px;
+  margin-bottom:6px;
+  word-break:break-all;
+  min-height:20px;
+  font-size:8px;
+}
+
+.char-controls{
+  display:flex;
+  gap:5px;
+}
+
+.char-btn{
+  flex:1;
+  padding:5px;
+  background:rgba(54,119,168,.08);
+  border:1px solid var(--kali-border);
+  color:var(--kali-cyan);
+  font-size:8px;
+  cursor:pointer;
+}
+
+.char-btn:hover{
+  background:rgba(54,119,168,.2);
+  color:#fff;
+}
+
+/* =========================================================
+   LOG
+   ========================================================= */
+
+.log{
+  background:#020608;
+  border:1px solid rgba(54,119,168,.3);
+  padding:10px;
+  height:300px;
+  overflow-y:auto;
+  font-size:8px;
+}
+
+.log-line{
+  margin-bottom:4px;
+  color:#66859a;
+}
+
+.log-line::before{
+  content:"";
+}
+
+.log-line.error{
+  color:#ff6685;
+}
+
+.log-line.success{
+  color:#72c7f5;
+}
+
+.log-line.warn{
+  color:#ffc857;
+}
+
+/* =========================================================
+   FILTER
+   ========================================================= */
+
+.filters{
+  margin-bottom:10px;
+  display:flex;
+  gap:8px;
+}
+
+.filter-input{
+  flex:1;
+  min-width:0;
+  background:#03080d;
+  border:1px solid var(--kali-border);
+  color:#d8f2ff;
+  padding:7px;
+  font-size:9px;
+  outline:none;
+}
+
+.filter-input:focus{
+  border-color:var(--kali-cyan);
+  box-shadow:0 0 10px rgba(54,119,168,.2);
+}
+
+/* =========================================================
+   RADAR
+   ========================================================= */
+
+.radar-container{
+  position:relative;
+  width:100%;
+  aspect-ratio:1;
+  background:
+    radial-gradient(
+      circle,
+      rgba(54,119,168,.06),
+      #020609 70%
+    );
+  border:1px solid var(--kali-border);
+  overflow:hidden;
+}
+
+#radarCanvas{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+.radar-container::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(
+      circle,
+      transparent 50%,
+      rgba(54,119,168,.08) 100%
+    );
+}
+
+.radar-overlay{
+  position:absolute;
+  top:10px;
+  left:10px;
+  font-size:8px;
+  color:var(--kali-cyan);
+  text-shadow:0 0 5px var(--kali-blue);
+  background:rgba(2,6,9,.8);
+  padding:8px;
+  border:1px solid var(--kali-border);
+}
+
+.radar-legend{
+  margin-top:10px;
+  font-size:8px;
+  color:var(--kali-muted);
+  line-height:1.7;
+}
+
+/* =========================================================
+   SCAN EFFECT
+   ========================================================= */
+
+.scanning{
+  animation:panelScan 1.2s infinite alternate;
+}
+
+@keyframes panelScan{
+  from{
+    box-shadow:
+      inset 0 0 0 rgba(114,199,245,0);
+  }
+  to{
+    box-shadow:
+      inset 0 0 25px rgba(54,119,168,.12);
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media(max-width:550px){
+  .header{
+    align-items:flex-start;
+  }
+
+  .status{
+    width:100%;
+    justify-content:center;
+  }
+
+  .controls .btn{
+    flex:1 1 45%;
+  }
+
+  .boot-title{
+    letter-spacing:4px;
+  }
+
+  .boot-dragon{
+    width:90px;
+    height:90px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- =======================================================
+     KALI BOOT SCREEN
+     ======================================================= -->
+
+<div id="bootScreen">
+
+  <div class="boot-grid"></div>
+
+  <div class="boot-content">
+
+    <img
+      class="boot-dragon"
+      src="https://www.kali.org/images/kali-dragon-icon.svg"
+      alt="Kali Linux Dragon"
+    >
+
+    <div class="boot-title">KALI LINUX</div>
+
+    <div class="boot-subtitle">
+      BLE_RADAR // SECURITY TERMINAL
+    </div>
+
+    <div class="boot-terminal" id="bootTerminal"></div>
+
+    <div class="progress-wrap">
+      <div class="progress" id="bootProgress"></div>
+    </div>
+
+    <div class="boot-percent" id="bootPercent">
+      INITIALIZING 0%
+    </div>
+
+    <div class="boot-scan">
+      SYSTEM STARTUP SEQUENCE • 10 SECOND INITIALIZATION
+    </div>
+
+  </div>
+</div>
+
+<!-- BACKGROUND -->
+<div class="kali-background"></div>
+<div class="scanlines"></div>
+
+<canvas id="matrix"></canvas>
+
+<!-- =======================================================
+     MAIN TERMINAL
+     ======================================================= -->
+
+<div class="terminal">
+
+  <div class="header">
+
+    <div class="brand">
+
+      <img
+        class="dragon"
+        src="https://www.kali.org/images/kali-dragon-icon.svg"
+        alt="Kali Dragon"
+      >
+
+      <div>
+        <div class="title">
+          KALI LINUX // BLE_RADAR_TRACKER v5.0
+        </div>
+
+        <div class="subtitle">
+          RSSI PROXIMITY • GATT INSPECTOR • LOCAL DEVICE MONITOR
+        </div>
+      </div>
+
+    </div>
+
+    <div class="status">
+      <div class="led" id="led"></div>
+      <span id="statusText">DISCONNECTED</span>
+    </div>
+
+  </div>
+
+  <div class="body">
+
+    <div class="warning">
+      ⚠ <strong>PERMISSION NOTICE:</strong>
+      HTTPS or localhost is required for Web Bluetooth.<br>
+
+      ⚠ RSSI provides approximate signal strength/proximity only.
+      It does not provide exact location or direction.<br>
+
+      ⚠ Bluetooth devices and location information are accessed only
+      after browser permission is granted.
+    </div>
+
+    <div class="controls">
+
+      <button class="btn" id="scanBtn">
+        [SCAN_DEVICE]
+      </button>
+
+      <button class="btn" id="watchBtn">
+        [WATCH_ADVERTS]
+      </button>
+
+      <button class="btn" id="locationBtn">
+        [GET_MY_LOCATION]
+      </button>
+
+      <button class="btn btn-danger" id="disconnectBtn" disabled>
+        [DISCONNECT]
+      </button>
+
+      <button class="btn" id="exportBtn" disabled>
+        [EXPORT_JSON]
+      </button>
+
+    </div>
+
+    <div class="grid">
+
+      <!-- DEVICE PANEL -->
+
+      <div class="panel">
+
+        <div class="panel-title">
+          > DEVICE_INFO
+        </div>
+
+        <div class="device-info">
+
+          <div class="info-row">
+            <span class="info-label">NAME:</span>
+            <span class="info-value" id="deviceName">--</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">ID:</span>
+            <span class="info-value" id="deviceId">--</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">CONNECTED:</span>
+            <span class="info-value" id="deviceConnected">FALSE</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">RSSI:</span>
+            <span class="info-value" id="rssi">--</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">EST_DISTANCE:</span>
+            <span class="info-value" id="distance">--</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">SERVICES:</span>
+            <span class="info-value" id="serviceCount">0</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">MY_LAT:</span>
+            <span class="info-value" id="latitude">--</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">MY_LON:</span>
+            <span class="info-value" id="longitude">--</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">SCAN_TIME:</span>
+            <span class="info-value" id="scanTime">--</span>
+          </div>
+
+        </div>
+
+        <div class="panel-title">
+          > ACTIVITY_LOG
+        </div>
+
+        <div class="log" id="log">
+
+          <div class="log-line">
+            > SYSTEM_INIT_COMPLETE
+          </div>
+
+          <div class="log-line">
+            > KALI_INTERFACE_READY
+          </div>
+
+          <div class="log-line">
+            > AWAITING_USER_ACTION
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- SERVICES PANEL -->
+
+      <div class="panel">
+
+        <div class="panel-title">
+          > SERVICES_AND_CHARACTERISTICS
+        </div>
+
+        <div class="filters">
+
+          <input
+            type="text"
+            class="filter-input"
+            id="uuidFilter"
+            placeholder="Filter UUID / service name..."
+          >
+
+          <button
+            class="btn"
+            id="filterBtn"
+            style="padding:6px 12px"
+          >
+            [FILTER]
+          </button>
+
+        </div>
+
+        <div class="service-list" id="serviceList">
+
+          <div
+            style="
+              text-align:center;
+              color:#496779;
+              font-size:9px;
+              padding:20px;
+            "
+          >
+            NO_DEVICE_CONNECTED
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- RADAR PANEL -->
+
+      <div class="panel" id="radarPanel">
+
+        <div class="panel-title">
+          > PROXIMITY_RADAR // RSSI_BASED
+        </div>
+
+        <div class="radar-container">
+
+          <canvas id="radarCanvas"></canvas>
+
+          <div class="radar-overlay">
+
+            <div>
+              BEARING:
+              <span id="bearing">--</span>°
+            </div>
+
+            <div>
+              DISTANCE:
+              <span id="radarDistance">--</span>
+            </div>
+
+            <div>
+              RSSI:
+              <span id="radarRssi">--</span> dBm
+            </div>
+
+            <div>
+              LAST_UPDATE:
+              <span id="lastUpdate">--</span>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="radar-legend">
+
+          ⚠ RSSI radar = relative signal strength visualization.<br>
+
+          • Blue/cyan dot = observed Bluetooth signal<br>
+
+          • Rings = approximate proximity bands<br>
+
+          • Sweep = visual scan animation<br>
+
+          • RSSI varies with walls, people, metal and antennas.<br>
+
+          • Bearing is not a real directional measurement.
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   KALI LINUX BOOT SEQUENCE
+   ========================================================= */
+
+const bootScreen = document.getElementById("bootScreen");
+const bootTerminal = document.getElementById("bootTerminal");
+const bootProgress = document.getElementById("bootProgress");
+const bootPercent = document.getElementById("bootPercent");
+
+const bootMessages = [
+  "Initializing KALI LINUX environment...",
+  "Loading BLE communication subsystem...",
+  "Initializing GATT inspection engine...",
+  "Loading RSSI proximity engine...",
+  "Initializing radar renderer...",
+  "Loading device permission interface...",
+  "Preparing local telemetry display...",
+  "Starting terminal interface...",
+  "Verifying browser capabilities...",
+  "SYSTEM READY."
+];
+
+bootMessages.forEach((message,index)=>{
+  setTimeout(()=>{
+    const line = document.createElement("div");
+    line.className = "boot-line";
+    line.textContent = message;
+    line.style.animationDelay = "0ms";
+    bootTerminal.appendChild(line);
+    bootTerminal.scrollTop = bootTerminal.scrollHeight;
+  }, index * 5000);
+});
+
+const bootStart = performance.now();
+const bootDuration = 100000;
+
+function bootAnimation(now){
+
+  const elapsed = now - bootStart;
+  const progress = Math.min(elapsed / bootDuration,1);
+  const percent = Math.floor(progress * 100);
+
+  bootProgress.style.width = percent + "%";
+  bootPercent.textContent =
+    percent < 100
+      ? `INITIALIZING ${percent}%`
+      : "SYSTEM READY • 100%";
+
+  if(progress < 1){
+    requestAnimationFrame(bootAnimation);
+  }else{
+    setTimeout(()=>{
+      bootScreen.classList.add("hidden");
+
+      setTimeout(()=>{
+        bootScreen.remove();
+      },1000);
+
+    },400);
+  }
+}
+
+requestAnimationFrame(bootAnimation);
+
+
+/* =========================================================
+   MATRIX BACKGROUND
+   ========================================================= */
+
+const matrix = document.getElementById("matrix");
+const matrixCtx = matrix.getContext("2d");
+
+function resizeMatrix(){
+  matrix.width = window.innerWidth;
+  matrix.height = window.innerHeight;
+}
+
+resizeMatrix();
+
+window.addEventListener("resize",resizeMatrix);
+
+const matrixChars = "01";
+const matrixFont = 12;
+
+let drops = [];
+
+function resetDrops(){
+  const columns =
+    Math.ceil(matrix.width / matrixFont);
+
+  drops = Array(columns).fill(1);
+}
+
+resetDrops();
+
+function drawMatrix(){
+
+  matrixCtx.fillStyle = "rgba(3,6,9,.08)";
+  matrixCtx.fillRect(
+    0,
+    0,
+    matrix.width,
+    matrix.height
+  );
+
+  matrixCtx.fillStyle = "#3677a8";
+  matrixCtx.font = matrixFont + "px monospace";
+
+  for(let i=0;i<drops.length;i++){
+
+    const char =
+      matrixChars[
+        Math.floor(
+          Math.random() * matrixChars.length
+        )
+      ];
+
+    matrixCtx.fillText(
+      char,
+      i * matrixFont,
+      drops[i] * matrixFont
+    );
+
+    if(
+      drops[i] * matrixFont > matrix.height &&
+      Math.random() > .975
+    ){
+      drops[i] = 0;
+    }
+
+    drops[i]++;
+  }
+}
+
+setInterval(drawMatrix,45);
+
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+let device = null;
+let server = null;
+let services = [];
+let geoData = null;
+let watchAbort = null;
+
+let radarAngle = 0;
+let radarBlips = [];
+
+let lastRssi = -100;
+let lastUpdate = 0;
+
+
+/* =========================================================
+   UUID DATABASE
+   ========================================================= */
+
+const knownServices = {
+
+  "0000180f-0000-1000-8000-00805f9b34fb":
+    "Battery Service",
+
+  "0000180a-0000-1000-8000-00805f9b34fb":
+    "Device Information",
+
+  "00001800-0000-1000-8000-00805f9b34fb":
+    "Generic Access",
+
+  "00001801-0000-1000-8000-00805f9b34fb":
+    "Generic Attribute",
+
+  "0000180d-0000-1000-8000-00805f9b34fb":
+    "Heart Rate",
+
+  "00001809-0000-1000-8000-00805f9b34fb":
+    "Health Thermometer"
+
+};
+
+const knownCharacteristics = {
+
+  "00002a19-0000-1000-8000-00805f9b34fb":
+    "Battery Level",
+
+  "00002a29-0000-1000-8000-00805f9b34fb":
+    "Manufacturer Name",
+
+  "00002a24-0000-1000-8000-00805f9b34fb":
+    "Model Number",
+
+  "00002a25-0000-1000-8000-00805f9b34fb":
+    "Serial Number",
+
+  "00002a26-0000-1000-8000-00805f9b34fb":
+    "Firmware Revision",
+
+  "00002a27-0000-1000-8000-00805f9b34fb":
+    "Hardware Revision",
+
+  "00002a00-0000-1000-8000-00805f9b34fb":
+    "Device Name",
+
+  "00002a01-0000-1000-8000-00805f9b34fb":
+    "Appearance"
+
+};
+
+
+/* =========================================================
+   UI
+   ========================================================= */
+
+const scanBtn =
+  document.getElementById("scanBtn");
+
+const watchBtn =
+  document.getElementById("watchBtn");
+
+const locationBtn =
+  document.getElementById("locationBtn");
+
+const disconnectBtn =
+  document.getElementById("disconnectBtn");
+
+const exportBtn =
+  document.getElementById("exportBtn");
+
+const filterBtn =
+  document.getElementById("filterBtn");
+
+const led =
+  document.getElementById("led");
+
+const statusText =
+  document.getElementById("statusText");
+
+const log =
+  document.getElementById("log");
+
+const serviceList =
+  document.getElementById("serviceList");
+
+const uuidFilter =
+  document.getElementById("uuidFilter");
+
+const radarPanel =
+  document.getElementById("radarPanel");
+
+
+/* =========================================================
+   LOG
+   ========================================================= */
+
+function addLog(message,type="normal"){
+
+  const line =
+    document.createElement("div");
+
+  line.className =
+    "log-line " + type;
+
+  line.textContent =
+    "> " + message;
+
+  log.appendChild(line);
+
+  log.scrollTop =
+    log.scrollHeight;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+function setStatus(connected){
+
+  if(connected){
+
+    led.classList.add("on");
+    statusText.textContent =
+      "CONNECTED";
+
+  }else{
+
+    led.classList.remove("on");
+    statusText.textContent =
+      "DISCONNECTED";
+  }
+}
+
+
+/* =========================================================
+   FIXED UUID FORMATTER
+   ========================================================= */
+
+function formatUuid(uuid){
+
+  const normalized =
+    String(uuid).toLowerCase();
+
+  return (
+    knownServices[normalized] ||
+    knownCharacteristics[normalized] ||
+    uuid
+  );
+}
+
+
+/* =========================================================
+   RSSI DISTANCE
+   ========================================================= */
+
+function rssiToDistance(rssi){
+
+  if(
+    typeof rssi !== "number" ||
+    !Number.isFinite(rssi)
+  ){
+    return null;
+  }
+
+  if(rssi === 0){
+    return null;
+  }
+
+  const txPower = -59;
+  const ratio = rssi / txPower;
+
+  if(ratio < 1){
+
+    return Math.pow(ratio,10);
+
+  }else{
+
+    return (
+      .89976 *
+      Math.pow(ratio,7.7095)
+      + .111
+    );
+
+  }
+}
+
+
+/* =========================================================
+   DECODE BLE DATA
+   ========================================================= */
+
+function decodeValue(dataView){
+
+  const bytes =
+    new Uint8Array(
+      dataView.buffer,
+      dataView.byteOffset,
+      dataView.byteLength
+    );
+
+  const hex =
+    Array.from(bytes)
+      .map(
+        b => b
+          .toString(16)
+          .padStart(2,"0")
+      )
+      .join(" ");
+
+  let ascii = "";
+  let utf8 = "";
+
+  try{
+
+    ascii =
+      new TextDecoder("ascii")
+        .decode(bytes)
+        .replace(/[^\x20-\x7E]/g,".");
+
+    utf8 =
+      new TextDecoder("utf-8")
+        .decode(bytes);
+
+  }catch(e){}
+
+  const uint8 =
+    bytes.length ? bytes[0] : null;
+
+  const uint16 =
+    bytes.length >= 2
+      ? dataView.getUint16(0,true)
+      : null;
+
+  const uint32 =
+    bytes.length >= 4
+      ? dataView.getUint32(0,true)
+      : null;
+
+  return {
+    hex,
+    ascii,
+    utf8,
+    uint8,
+    uint16,
+    uint32,
+    bytes:bytes.length
+  };
+}
+
+
+/* =========================================================
+   LOCATION
+   ========================================================= */
+
+function getLocation(){
+
+  if(!navigator.geolocation){
+
+    addLog(
+      "ERROR: GEOLOCATION_UNAVAILABLE",
+      "error"
+    );
+
+    return;
+  }
+
+  addLog(
+    "REQUESTING_LOCATION_PERMISSION..."
+  );
+
+  navigator.geolocation.getCurrentPosition(
+
+    position => {
+
+      geoData = {
+
+        lat:
+          position.coords.latitude,
+
+        lon:
+          position.coords.longitude,
+
+        acc:
+          position.coords.accuracy,
+
+        time:
+          new Date().toISOString()
+
+      };
+
+      document.getElementById("latitude")
+        .textContent =
+        geoData.lat.toFixed(6);
+
+      document.getElementById("longitude")
+        .textContent =
+        geoData.lon.toFixed(6);
+
+      addLog(
+        `LOCATION_ACQUIRED ±${Math.round(
+          geoData.acc
+        )}m`,
+        "success"
+      );
+
+    },
+
+    error => {
+
+      addLog(
+        "LOCATION_ERROR: " +
+        error.message,
+        "error"
+      );
+
+    },
+
+    {
+      enableHighAccuracy:true,
+      timeout:10000
+    }
+
+  );
+}
+
+
+/* =========================================================
+   BLUETOOTH SCAN
+   ========================================================= */
+
+async function scan(){
+
+  if(!navigator.bluetooth){
+
+    addLog(
+      "ERROR: WEB_BLUETOOTH_NOT_SUPPORTED",
+      "error"
+    );
+
+    return;
+  }
+
+  try{
+
+    radarPanel.classList.add("scanning");
+
+    addLog(
+      "REQUESTING_BLUETOOTH_DEVICE..."
+    );
+
+    device =
+      await navigator.bluetooth.requestDevice({
+
+        acceptAllDevices:true,
+
+        optionalServices:
+          Object.keys(knownServices)
+
+      });
+
+    addLog(
+      "DEVICE_SELECTED: " +
+      (device.name || "Unnamed"),
+      "success"
+    );
+
+    document.getElementById("deviceName")
+      .textContent =
+      device.name || "Unnamed";
+
+    document.getElementById("deviceId")
+      .textContent =
+      device.id;
+
+    document.getElementById("scanTime")
+      .textContent =
+      new Date().toLocaleTimeString();
+
+    device.addEventListener(
+      "gattserverdisconnected",
+      onDisconnected
+    );
+
+    addLog(
+      "CONNECTING_TO_GATT..."
+    );
+
+    server =
+      await device.gatt.connect();
+
+    document.getElementById(
+      "deviceConnected"
+    ).textContent = "TRUE";
+
+    setStatus(true);
+
+    disconnectBtn.disabled = false;
+    exportBtn.disabled = false;
+    scanBtn.disabled = true;
+
+    addLog(
+      "CONNECTION_ESTABLISHED",
+      "success"
+    );
+
+    await discoverServices();
+
+  }catch(error){
+
+    if(error.name !== "NotFoundError"){
+
+      addLog(
+        "ERROR: " + error.message,
+        "error"
+      );
+
+    }
+
+  }finally{
+
+    radarPanel.classList.remove("scanning");
+
+  }
+}
+
+
+/* =========================================================
+   ADVERTISEMENT WATCH
+   ========================================================= */
+
+async function watchAdverts(){
+
+  if(!navigator.bluetooth){
+
+    addLog(
+      "ERROR: WEB_BLUETOOTH_NOT_SUPPORTED",
+      "error"
+    );
+
+    return;
+  }
+
+  if(
+    typeof navigator.bluetooth.requestLEScan !==
+    "function"
+  ){
+
+    addLog(
+      "LE_ADVERTISEMENT_SCAN_UNAVAILABLE_IN_THIS_BROWSER",
+      "error"
+    );
+
+    return;
+  }
+
+  try{
+
+    addLog(
+      "STARTING_ADVERTISEMENT_WATCH..."
+    );
+
+    watchAbort =
+      new AbortController();
+
+    await navigator.bluetooth.requestLEScan({
+
+      acceptAllAdvertisements:true,
+      keepRepeatedDevices:true
+
+    },{
+      signal:watchAbort.signal
+    });
+
+    navigator.bluetooth.addEventListener(
+      "advertisementreceived",
+      handleAdvert
+    );
+
+    addLog(
+      "WATCHING_ADVERTISEMENTS",
+      "success"
+    );
+
+    watchBtn.disabled = true;
+
+  }catch(error){
+
+    addLog(
+      "WATCH_ERROR: " +
+      error.message,
+      "error"
+    );
+
+  }
+}
+
+
+/* =========================================================
+   ADVERTISEMENT HANDLER
+   ========================================================= */
+
+function handleAdvert(event){
+
+  if(
+    typeof event.rssi !== "number"
+  ){
+    return;
+  }
+
+  lastRssi =
+    event.rssi;
+
+  lastUpdate =
+    Date.now();
+
+  const distance =
+    rssiToDistance(lastRssi);
+
+  document.getElementById("rssi")
+    .textContent =
+    lastRssi + " dBm";
+
+  document.getElementById("distance")
+    .textContent =
+    distance !== null
+      ? distance.toFixed(1) + "m"
+      : "--";
+
+  document.getElementById("radarRssi")
+    .textContent =
+    lastRssi + " dBm";
+
+  document.getElementById("radarDistance")
+    .textContent =
+    distance !== null
+      ? distance.toFixed(1) + "m"
+      : "--";
+
+  document.getElementById("lastUpdate")
+    .textContent =
+    new Date().toLocaleTimeString();
+
+  const bearing =
+    Math.floor(
+      (Date.now() / 100) % 360
+    );
+
+  document.getElementById("bearing")
+    .textContent =
+    bearing;
+
+  radarBlips.push({
+
+    rssi:lastRssi,
+
+    distance,
+
+    time:Date.now(),
+
+    alpha:1
+
+  });
+
+  radarBlips =
+    radarBlips.filter(
+      b => Date.now() - b.time < 3500
+    );
+
+}
+
+
+/* =========================================================
+   SERVICE DISCOVERY
+   ========================================================= */
+
+async function discoverServices(){
+
+  try{
+
+    addLog(
+      "DISCOVERING_PRIMARY_SERVICES..."
+    );
+
+    services =
+      await server.getPrimaryServices();
+
+    document.getElementById(
+      "serviceCount"
+    ).textContent =
+      services.length;
+
+    addLog(
+      `FOUND_${services.length}_SERVICES`,
+      "success"
+    );
+
+    serviceList.innerHTML = "";
+
+    for(const service of services){
+
+      await renderService(service);
+
+    }
+
+  }catch(error){
+
+    addLog(
+      "SERVICE_DISCOVERY_ERROR: " +
+      error.message,
+      "error"
+    );
+
+  }
+}
+
+
+/* =========================================================
+   SERVICE RENDER
+   ========================================================= */
+
+async function renderService(service){
+
+  const serviceDiv =
+    document.createElement("div");
+
+  serviceDiv.className =
+    "service-item";
+
+  serviceDiv.dataset.uuid =
+    service.uuid;
+
+  let chars = [];
+
+  try{
+
+    chars =
+      await service.getCharacteristics();
+
+  }catch(error){
+
+    addLog(
+      "CHARACTERISTIC_DISCOVERY_ERROR",
+      "error"
+    );
+
+  }
+
+  const serviceName =
+    formatUuid(service.uuid);
+
+  serviceDiv.innerHTML = `
+
+    <div class="service-header">
+      ${serviceName}
+    </div>
+
+    <div class="service-uuid">
+      ${service.uuid}
+    </div>
+
+    <div
+      class="char-list"
+      id="chars-${service.uuid}"
+    ></div>
+
+  `;
+
+  serviceList.appendChild(
+    serviceDiv
+  );
+
+  for(const char of chars){
+
+    await renderCharacteristic(
+      service.uuid,
+      char
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   CHARACTERISTIC RENDER
+   ========================================================= */
+
+async function renderCharacteristic(
+  serviceUuid,
+  char
+){
+
+  const charList =
+    document.getElementById(
+      `chars-${serviceUuid}`
+    );
+
+  if(!charList){
+    return;
+  }
+
+  const charDiv =
+    document.createElement("div");
+
+  charDiv.className =
+    "char-item";
+
+  charDiv.dataset.uuid =
+    char.uuid;
+
+  const props = [];
+
+  if(char.properties.read)
+    props.push("R");
+
+  if(char.properties.write)
+    props.push("W");
+
+  if(char.properties.writeWithoutResponse)
+    props.push("WNR");
+
+  if(char.properties.notify)
+    props.push("N");
+
+  if(char.properties.indicate)
+    props.push("I");
+
+  const charName =
+    formatUuid(char.uuid);
+
+  const charId =
+    `char-${serviceUuid}-${char.uuid}`;
+
+  charDiv.innerHTML = `
+
+    <div class="char-uuid">
+      ${charName}
+    </div>
+
+    <div class="char-props">
+      PROPS:
+      ${props.join(", ") || "NONE"}
+      <br>
+      UUID:
+      ${char.uuid}
+    </div>
+
+    <div
+      class="char-value"
+      id="${charId}"
+    >
+      --
+    </div>
+
+    <div class="char-controls">
+
+      ${
+        char.properties.read
+        ? `
+          <button
+            class="char-btn"
+            onclick="
+              readChar(
+                '${serviceUuid}',
+                '${char.uuid}'
+              )
+            "
+          >
+            READ
+          </button>
+        `
+        : ""
+      }
+
+      ${
+        char.properties.notify ||
+        char.properties.indicate
+        ? `
+          <button
+            class="char-btn"
+            onclick="
+              toggleNotify(
+                '${serviceUuid}',
+                '${char.uuid}'
+              )
+            "
+          >
+            NOTIFY
+          </button>
+        `
+        : ""
+      }
+
+    </div>
+  `;
+
+  charList.appendChild(
+    charDiv
+  );
+
+  if(char.properties.read){
+
+    try{
+
+      await readChar(
+        serviceUuid,
+        char.uuid,
+        true
+      );
+
+    }catch(e){}
+
+  }
+
+}
+
+
+/* =========================================================
+   READ CHARACTERISTIC
+   ========================================================= */
+
+window.readChar =
+async function(
+  serviceUuid,
+  charUuid,
+  silent=false
+){
+
+  try{
+
+    const service =
+      services.find(
+        s => s.uuid === serviceUuid
+      );
+
+    if(!service){
+      throw new Error(
+        "Service not found"
+      );
+    }
+
+    const char =
+      await service.getCharacteristic(
+        charUuid
+      );
+
+    const value =
+      await char.readValue();
+
+    const decoded =
+      decodeValue(value);
+
+    const charId =
+      `char-${serviceUuid}-${charUuid}`;
+
+    const element =
+      document.getElementById(charId);
+
+    if(!element){
+      return;
+    }
+
+    element.innerHTML = `
+
+      HEX:
+      ${decoded.hex || "--"}
+      <br>
+
+      ASCII:
+      ${decoded.ascii || "--"}
+      <br>
+
+      U8:
+      ${decoded.uint8 ?? "N/A"}
+
+      |
+
+      U16:
+      ${decoded.uint16 ?? "N/A"}
+
+      |
+
+      U32:
+      ${decoded.uint32 ?? "N/A"}
+
+      <br>
+
+      UTF8:
+      ${decoded.utf8
+        ? decoded.utf8.substring(0,80)
+        : "--"}
+
+    `;
+
+    if(!silent){
+
+      addLog(
+        `READ_${charUuid.substring(4,8)}: ${decoded.hex}`,
+        "success"
+      );
+
+    }
+
+  }catch(error){
+
+    addLog(
+      "READ_ERROR: " +
+      error.message,
+      "error"
+    );
+
+  }
+
+};
+
+
+/* =========================================================
+   NOTIFICATIONS
+   ========================================================= */
+
+window.toggleNotify =
+async function(
+  serviceUuid,
+  charUuid
+){
+
+  try{
+
+    const service =
+      services.find(
+        s => s.uuid === serviceUuid
+      );
+
+    if(!service){
+      throw new Error(
+        "Service not found"
+      );
+    }
+
+    const char =
+      await service.getCharacteristic(
+        charUuid
+      );
+
+    if(
+      !char.properties.notify &&
+      !char.properties.indicate
+    ){
+
+      throw new Error(
+        "Notifications unsupported"
+      );
+
+    }
+
+    await char.startNotifications();
+
+    char.addEventListener(
+      "characteristicvaluechanged",
+      event => {
+
+        const decoded =
+          decodeValue(
+            event.target.value
+          );
+
+        const charId =
+          `char-${serviceUuid}-${charUuid}`;
+
+        const element =
+          document.getElementById(
+            charId
+          );
+
+        if(element){
+
+          element.innerHTML = `
+
+            [NOTIFY]
+
+            HEX:
+            ${decoded.hex}
+
+            <br>
+
+            ASCII:
+            ${decoded.ascii}
+
+            <br>
+
+            U8:
+            ${decoded.uint8 ?? "N/A"}
+
+          `;
+
+        }
+
+        addLog(
+          `NOTIFY_${charUuid.substring(4,8)}: ${decoded.hex}`,
+          "success"
+        );
+
+      }
+    );
+
+    addLog(
+      `NOTIFICATIONS_ENABLED: ${charUuid.substring(4,8)}`,
+      "success"
+    );
+
+  }catch(error){
+
+    addLog(
+      "NOTIFY_ERROR: " +
+      error.message,
+      "error"
+    );
+
+  }
+
+};
+
+
+/* =========================================================
+   DISCONNECT
+   ========================================================= */
+
+function onDisconnected(){
+
+  addLog(
+    "DEVICE_DISCONNECTED",
+    "warn"
+  );
+
+  setStatus(false);
+
+  document.getElementById(
+    "deviceConnected"
+  ).textContent = "FALSE";
+
+  disconnectBtn.disabled = true;
+  exportBtn.disabled = true;
+  scanBtn.disabled = false;
+
+  serviceList.innerHTML = `
+    <div
+      style="
+        text-align:center;
+        color:#496779;
+        font-size:9px;
+        padding:20px;
+      "
+    >
+      NO_DEVICE_CONNECTED
+    </div>
+  `;
+
+  if(watchAbort){
+
+    watchAbort.abort();
+
+    watchAbort = null;
+
+    watchBtn.disabled = false;
+
+  }
+
+  server = null;
+  services = [];
+  radarBlips = [];
+
+}
+
+
+/* =========================================================
+   MANUAL DISCONNECT
+   ========================================================= */
+
+function disconnect(){
+
+  if(
+    device &&
+    device.gatt &&
+    device.gatt.connected
+  ){
+
+    addLog(
+      "DISCONNECTING..."
+    );
+
+    device.gatt.disconnect();
+
+  }
+
+  if(watchAbort){
+
+    watchAbort.abort();
+
+    watchAbort = null;
+
+    watchBtn.disabled = false;
+
+  }
+
+}
+
+
+/* =========================================================
+   JSON EXPORT
+   ========================================================= */
+
+function exportData(){
+
+  if(!device){
+
+    addLog(
+      "EXPORT_ERROR: NO_DEVICE",
+      "error"
+    );
+
+    return;
+  }
+
+  const data = {
+
+    application:
+      "KALI LINUX BLE RADAR v5.0",
+
+    device:{
+      name:
+        device.name || "Unnamed",
+
+      id:
+        device.id,
+
+      services:
+        services.length,
+
+      rssi:
+        lastRssi,
+
+      estimatedDistance:
+        rssiToDistance(lastRssi)
+
+    },
+
+    location:
+      geoData,
+
+    timestamp:
+      new Date().toISOString(),
+
+    services:
+      services.map(
+        service => ({
+          uuid:service.uuid,
+          name:formatUuid(service.uuid)
+        })
+      )
+
+  };
+
+  const blob =
+    new Blob(
+      [
+        JSON.stringify(
+          data,
+          null,
+          2
+        )
+      ],
+      {
+        type:"application/json"
+      }
+    );
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement("a");
+
+  a.href = url;
+
+  a.download =
+    `kali_ble_${Date.now()}.json`;
+
+  a.click();
+
+  setTimeout(
+    () => URL.revokeObjectURL(url),
+    1000
+  );
+
+  addLog(
+    "DATA_EXPORTED",
+    "success"
+  );
+
+}
+
+
+/* =========================================================
+   FILTER
+   ========================================================= */
+
+function filterServices(){
+
+  const filter =
+    uuidFilter.value
+      .trim()
+      .toLowerCase();
+
+  const items =
+    serviceList.querySelectorAll(
+      ".service-item"
+    );
+
+  items.forEach(item => {
+
+    const uuid =
+      item.dataset.uuid
+        .toLowerCase();
+
+    const name =
+      item.querySelector(
+        ".service-header"
+      )
+      .textContent
+      .toLowerCase();
+
+    const visible =
+      !filter ||
+      uuid.includes(filter) ||
+      name.includes(filter);
+
+    item.style.display =
+      visible ? "block" : "none";
+
+  });
+
+}
+
+
+/* =========================================================
+   RADAR
+   ========================================================= */
+
+const radarCanvas =
+  document.getElementById(
+    "radarCanvas"
+  );
+
+const radarCtx =
+  radarCanvas.getContext("2d");
+
+let radarSize = 400;
+
+function resizeRadar(){
+
+  const rect =
+    radarCanvas.parentElement
+      .getBoundingClientRect();
+
+  radarSize =
+    Math.max(
+      100,
+      Math.floor(
+        Math.min(
+          rect.width,
+          rect.height
+        )
+      )
+    );
+
+  radarCanvas.width =
+    radarSize;
+
+  radarCanvas.height =
+    radarSize;
+
+}
+
+resizeRadar();
+
+window.addEventListener(
+  "resize",
+  resizeRadar
+);
+
+
+function drawRadar(){
+
+  radarCtx.fillStyle =
+    "#020609";
+
+  radarCtx.fillRect(
+    0,
+    0,
+    radarSize,
+    radarSize
+  );
+
+  const centerX =
+    radarSize / 2;
+
+  const centerY =
+    radarSize / 2;
+
+  const maxRadius =
+    radarSize / 2 - 12;
+
+
+  /* Rings */
+
+  radarCtx.strokeStyle =
+    "rgba(54,119,168,.35)";
+
+  radarCtx.lineWidth = 1;
+
+  [
+    .12,
+    .30,
+    .55,
+    .78,
+    1
+  ].forEach(r => {
+
+    radarCtx.beginPath();
+
+    radarCtx.arc(
+      centerX,
+      centerY,
+      maxRadius * r,
+      0,
+      Math.PI * 2
+    );
+
+    radarCtx.stroke();
+
+  });
+
+
+  /* Crosshair */
+
+  radarCtx.beginPath();
+
+  radarCtx.moveTo(
+    centerX,
+    10
+  );
+
+  radarCtx.lineTo(
+    centerX,
+    radarSize - 10
+  );
+
+  radarCtx.moveTo(
+    10,
+    centerY
+  );
+
+  radarCtx.lineTo(
+    radarSize - 10,
+    centerY
+  );
+
+  radarCtx.stroke();
+
+
+  /* Sweep */
+
+  radarAngle =
+    (radarAngle + 1.8) % 360;
+
+  const rad =
+    (radarAngle - 90)
+    * Math.PI / 180;
+
+  const endX =
+    centerX +
+    Math.cos(rad) *
+    maxRadius;
+
+  const endY =
+    centerY +
+    Math.sin(rad) *
+    maxRadius;
+
+  const gradient =
+    radarCtx.createLinearGradient(
+      centerX,
+      centerY,
+      endX,
+      endY
+    );
+
+  gradient.addColorStop(
+    0,
+    "rgba(114,199,245,0)"
+  );
+
+  gradient.addColorStop(
+    .6,
+    "rgba(54,119,168,.08)"
+  );
+
+  gradient.addColorStop(
+    1,
+    "rgba(114,199,245,.55)"
+  );
+
+  radarCtx.strokeStyle =
+    gradient;
+
+  radarCtx.lineWidth = 2;
+
+  radarCtx.beginPath();
+
+  radarCtx.moveTo(
+    centerX,
+    centerY
+  );
+
+  radarCtx.lineTo(
+    endX,
+    endY
+  );
+
+  radarCtx.stroke();
+
+
+  /* Center */
+
+  radarCtx.fillStyle =
+    "#72c7f5";
+
+  radarCtx.shadowBlur = 15;
+
+  radarCtx.shadowColor =
+    "#3677a8";
+
+  radarCtx.beginPath();
+
+  radarCtx.arc(
+    centerX,
+    centerY,
+    3,
+    0,
+    Math.PI * 2
+  );
+
+  radarCtx.fill();
+
+  radarCtx.shadowBlur = 0;
+
+
+  /* Blips */
+
+  const now =
+    Date.now();
+
+  radarBlips =
+    radarBlips.filter(
+      blip => {
+
+        const age =
+          now - blip.time;
+
+        blip.alpha =
+          Math.max(
+            0,
+            1 - age / 3500
+          );
+
+        return blip.alpha > 0;
+
+      }
+    );
+
+
+  radarBlips.forEach(
+    blip => {
+
+      let radius;
+
+      if(
+        !blip.distance ||
+        blip.distance < 0
+      ){
+
+        radius =
+          maxRadius * .9;
+
+      }else if(
+        blip.distance <= 1
+      ){
+
+        radius =
+          maxRadius * .12;
+
+      }else if(
+        blip.distance <= 3
+      ){
+
+        radius =
+          maxRadius * .30;
+
+      }else if(
+        blip.distance <= 10
+      ){
+
+        radius =
+          maxRadius * .55;
+
+      }else{
+
+        radius =
+          maxRadius * .9;
+
+      }
+
+
+      /*
+        This angle is intentionally only
+        a visual placement.
+
+        RSSI alone cannot determine
+        real-world bearing.
+      */
+
+      const visualBearing =
+        (blip.time / 100) % 360;
+
+      const brad =
+        (visualBearing - 90)
+        * Math.PI / 180;
+
+      const x =
+        centerX +
+        Math.cos(brad) *
+        radius;
+
+      const y =
+        centerY +
+        Math.sin(brad) *
+        radius;
+
+
+      radarCtx.fillStyle =
+        `rgba(114,199,245,${blip.alpha})`;
+
+      radarCtx.shadowBlur =
+        18 * blip.alpha;
+
+      radarCtx.shadowColor =
+        "#3677a8";
+
+      radarCtx.beginPath();
+
+      radarCtx.arc(
+        x,
+        y,
+        4,
+        0,
+        Math.PI * 2
+      );
+
+      radarCtx.fill();
+
+      radarCtx.shadowBlur = 0;
+
+    }
+  );
+
+
+  requestAnimationFrame(
+    drawRadar
+  );
+
+}
+
+drawRadar();
+
+
+/* =========================================================
+   EVENTS
+   ========================================================= */
+
+scanBtn.addEventListener(
+  "click",
+  scan
+);
+
+watchBtn.addEventListener(
+  "click",
+  watchAdverts
+);
+
+locationBtn.addEventListener(
+  "click",
+  getLocation
+);
+
+disconnectBtn.addEventListener(
+  "click",
+  disconnect
+);
+
+exportBtn.addEventListener(
+  "click",
+  exportData
+);
+
+filterBtn.addEventListener(
+  "click",
+  filterServices
+);
+
+uuidFilter.addEventListener(
+  "keyup",
+  event => {
+
+    if(event.key === "Enter"){
+      filterServices();
+    }
+
+  }
+);
+
+
+/* =========================================================
+   CAPABILITY CHECK
+   ========================================================= */
+
+if(!navigator.bluetooth){
+
+  addLog(
+    "WARNING: WEB_BLUETOOTH_NOT_AVAILABLE",
+    "warn"
+  );
+
+  scanBtn.disabled = true;
+  watchBtn.disabled = true;
+
+}
+
+if(
+  !navigator.geolocation
+){
+
+  addLog(
+    "WARNING: GEOLOCATION_NOT_AVAILABLE",
+    "warn"
+  );
+
+  locationBtn.disabled = true;
+
+}
+
+
+/* =========================================================
+   READY
+   ========================================================= */
+
+addLog(
+  "KALI_LINUX_INTERFACE_LOADED",
+  "success"
+);
+
+addLog(
+  "BLE_RADAR_ENGINE_READY",
+  "success"
+);
+
+</script>
+
+</body>
+</html> 

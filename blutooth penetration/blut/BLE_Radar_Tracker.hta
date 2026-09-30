@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <HTA:APPLICATION
+    APPLICATIONNAME="BLE Radar Tracker"
+    ID="BLERadarTracker"
+    VERSION="4.0"
+    BORDER="thin"
+    BORDERSTYLE="normal"
+    CAPTION="yes"
+    MAXIMIZEBUTTON="yes"
+    MINIMIZEBUTTON="yes"
+    SCROLL="yes"
+    SINGLEINSTANCE="yes"
+    SYSMENU="yes"
+    WINDOWSTATE="normal"
+  />
+  <title>BLE Radar Tracker v4.0</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+
+    body {
+      background: #000;
+      color: #00ff41;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    #matrix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.05;
+      pointer-events: none;
+    }
+
+.terminal {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      background: rgba(0, 10, 0, 0.95);
+      border: 2px solid #00ff41;
+      box-shadow: 0 0 40px rgba(0, 255, 65, 0.3);
+    }
+
+.header {
+      padding: 15px;
+      border-bottom: 1px solid #00ff41;
+      background: rgba(0, 255, 65, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+.title {
+      font-size: 16px;
+      text-shadow: 0 0 10px #00ff41;
+      letter-spacing: 2px;
+    }
+
+.status {
+      font-size: 10px;
+      color: #00aa33;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+.led {
+      width: 8px;
+      height: 8px;
+      background: #004411;
+      border-radius: 50%;
+      box-shadow: 0 0 5px #004411;
+    }
+
+.led.on {
+      background: #00ff41;
+      box-shadow: 0 0 10px #00ff41;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+.body {
+      padding: 20px;
+    }
+
+.warning {
+      background: rgba(255, 170, 0, 0.1);
+      border: 1px solid #ffaa00;
+      color: #ffaa00;
+      padding: 10px;
+      font-size: 9px;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+.controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+.btn {
+      padding: 10px 18px;
+      background: rgba(0, 255, 65, 0.15);
+      border: 1px solid #00ff41;
+      color: #00ff41;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-shadow: 0 0 5px #00ff41;
+      letter-spacing: 1px;
+    }
+
+.btn:hover:not(:disabled) {
+      background: rgba(0, 255, 65, 0.25);
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+    }
+
+.btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+.btn-danger {
+      background: rgba(255, 0, 65, 0.15);
+      border-color: #ff0041;
+      color: #ff0041;
+      text-shadow: 0 0 5px #ff0041;
+    }
+
+.grid {
+      display: grid;
+      grid-template-columns: 380px 1fr 400px;
+      gap: 20px;
+    }
+
+    @media (max-width: 1400px) {
+.grid { grid-template-columns: 380px 1fr; }
+#radarPanel { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 968px) {
+.grid { grid-template-columns: 1fr; }
+    }
+
+.panel {
+      background: #000;
+      border: 1px solid #00aa33;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+
+.panel-title {
+      font-size: 11px;
+      color: #00aa33;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #003311;
+      letter-spacing: 1px;
+    }
+
+.device-info {
+      font-size: 10px;
+      margin-bottom: 15px;
+    }
+
+.info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #002211;
+    }
+
+.info-label {
+      color: #00aa33;
+    }
+
+.info-value {
+      color: #00ff41;
+      text-align: right;
+      max-width: 60%;
+      word-break: break-all;
+    }
+
+.radar-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      background: #000;
+      border: 1px solid #00aa33;
+      overflow: hidden;
+    }
+
+#radarCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+.radar-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 9px;
+      color: #00ff41;
+      text-shadow: 0 0 5px #00ff41;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px;
+      border: 1px solid #00aa33;
+    }
+
+.radar-legend {
+      margin-top: 10px;
+      font-size: 9px;
+      color: #00aa33;
+      line-height: 1.6;
+    }
+
+.service-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 600px;
+      border: 1px solid #003311;
+      padding: 5px;
+    }
+
+.service-item {
+      background: rgba(0, 20, 0, 0.5);
+      border: 1px solid #00aa33;
+      margin-bottom: 8px;
+      padding: 10px;
+    }
+
+.service-header {
+      font-size: 10px;
+      color: #00ff41;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+.service-uuid {
+      font-size: 8px;
+      color: #00aa33;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+.char-list {
+      margin-left: 10px;
+    }
+
+.char-item {
+      background: #000;
+      border: 1px solid #003311;
+      padding: 8px;
+      margin-bottom: 6px;
+      font-size: 9px;
+    }
+
+.char-uuid {
+      color: #00aa33;
+      margin-bottom: 5px;
+      word-break: break-all;
+    }
+
+.char-props {
+      color: #00aa33;
+      font-size: 8px;
+      margin-bottom: 6px;
+    }
+
+.char-value {
+      color: #00ff41;
+      background: rgba(0, 255, 65, 0.05);
+      padding: 6px;
+      margin-bottom: 6px;
+      word-break: break-all;
+      min-height: 20px;
+      font-size: 9px;
+    }
+
+.char-controls {
+      display: flex;
+      gap: 5px;
+    }
+
+.char-btn {
+      flex: 1;
+      padding: 4px;
+      background: rgba(0, 255, 65, 0.1);
+      border: 1px solid #00aa33;
+      color: #00ff41;
+      font-size: 8px;
+      cursor: pointer;
+    }
+
+.char-btn:hover {
+      background: rgba(0, 255, 65, 0.2);
+    }
+
+.log {
+      background: #000;
+      border: 1px solid #00aa33;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      font-size: 9px;
+    }
+
+.log-line {
+      margin-bottom: 3px;
+      color: #00aa33;
+    }
+
+.log-line.error { color: #ff0041; }
+.log-line.success { color: #00ff41; }
+.log-line.warn { color: #ffaa00; }
+
+.filters {
+      margin-bottom: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+.filter-input {
+      flex: 1;
+      background: rgba(0, 20, 0, 0.8);
+      border: 1px solid #00aa33;
+      color: #00ff41;
+      padding: 6px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrix"></canvas>
+
+  <div class="terminal">
+    <div class="header">
+      <div class="title">BLE_RADAR_TRACKER v4.0 [RSSI_BASED]</div>
+      <div class="status">
+        <div class="led" id="led"></div>
+        <span id="statusText">DISCONNECTED</span>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="warning">
+        ⚠ HTTPS or localhost required. Chrome/Edge only. iOS Safari blocked.<br>
+        ⚠ RADAR USES RSSI ONLY: Shows approximate proximity, NOT exact location/direction. Signal varies by walls, interference, device antenna.<br>
+        ⚠ No data saved to disk. User must approve each device + location.
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="scanBtn">[SCAN_ALL]</button>
+        <button class="btn" id="watchBtn">[WATCH_ADVERTS]</button>
+        <button class="btn" id="locationBtn">[GET_MY_LOCATION]</button>
+        <button class="btn btn-danger" id="disconnectBtn" disabled>[DISCONNECT]</button>
+        <button class="btn" id="exportBtn" disabled>[EXPORT_JSON]</button>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <div class="panel-title">> DEVICE_INFO</div>
+          <div class="device-info" id="deviceInfo">
+            <div class="info-row">
+              <span class="info-label">NAME:</span>
+              <span class="info-value" id="deviceName">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">ID:</span>
+              <span class="info-value" id="deviceId">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">CONNECTED:</span>
+              <span class="info-value" id="deviceConnected">FALSE</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">RSSI:</span>
+              <span class="info-value" id="rssi">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">EST_DISTANCE:</span>
+              <span class="info-value" id="distance">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">SERVICES:</span>
+              <span class="info-value" id="serviceCount">0</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">MY_LAT:</span>
+              <span class="info-value" id="latitude">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">MY_LON:</span>
+              <span class="info-value" id="longitude">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">SCAN_TIME:</span>
+              <span class="info-value" id="scanTime">--</span>
+            </div>
+          </div>
+
+          <div class="panel-title">> ACTIVITY_LOG</div>
+          <div class="log" id="log">
+            <div class="log-line">> SYSTEM_INIT_COMPLETE</div>
+            <div class="log-line">> AWAITING_USER_ACTION</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">> SERVICES_AND_CHARACTERISTICS</div>
+          <div class="filters">
+            <input type="text" class="filter-input" id="uuidFilter" placeholder="Filter UUID: 180f, battery, etc">
+            <button class="btn" id="filterBtn" style="padding:6px 12px;">[FILTER]</button>
+          </div>
+          <div class="service-list" id="serviceList">
+            <div style="text-align:center;color:#004411;font-size:10px;padding:20px;">NO_DEVICE_CONNECTED</div>
+          </div>
+        </div>
+
+        <div class="panel" id="radarPanel">
+          <div class="panel-title">> PROXIMITY_RADAR [RSSI_BASED]</div>
+          <div class="radar-container">
+            <canvas id="radarCanvas"></canvas>
+            <div class="radar-overlay">
+              <div>BEARING: <span id="bearing">--</span>°</div>
+              <div>DISTANCE: <span id="radarDistance">--</span></div>
+              <div>RSSI: <span id="radarRssi">--</span> dBm</div>
+              <div>LAST_UPDATE: <span id="lastUpdate">--</span></div>
+            </div>
+          </div>
+          <div class="radar-legend">
+            ⚠ Radar shows RELATIVE signal strength only.<br>
+            - Green dot = Connected device<br>
+            - Distance rings: 1m, 3m, 10m, 30m estimated<br>
+            - Sweep = Active scan | Blip pulse = RSSI update<br>
+            - Walls/metal/people affect signal. Not for navigation.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // MATRIX BG
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const chars = "01";
+    const charArray = chars.split("");
+    const fontSize = 12;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#00ff41';
+      ctx.font = fontSize + 'px monospace';
+      for (let i = 0; i < drops.length; i++) {
+        const text = charArray[Math.floor(Math.random() * charArray.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 35);
+
+    // STATE
+    let device = null;
+    let server = null;
+    let services = [];
+    let geoData = null;
+    let watchAbort = null;
+    let radarAngle = 0;
+    let radarBlips = [];
+    let lastRssi = -100;
+    let lastUpdate = 0;
+
+    const knownServices = {
+      '0000180f-0000-1000-8000-00805f9b34fb': 'Battery Service',
+      '0000180a-0000-1000-8000-00805f9b34fb': 'Device Information',
+      '00001800-0000-1000-8000-00805f9b34fb': 'Generic Access',
+      '00001801-0000-1000-8000-00805f9b34fb': 'Generic Attribute',
+      '0000180d-0000-1000-8000-00805f9b34fb': 'Heart Rate',
+      '00001809-0000-1000-8000-00805f9b34fb': 'Health Thermometer'
+    };
+    const knownCharacteristics = {
+      '00002a19-0000-1000-8000-00805f9b34fb': 'Battery Level',
+      '00002a29-0000-1000-8000-00805f9b34fb': 'Manufacturer Name',
+      '00002a24-0000-1000-8000-00805f9b34fb': 'Model Number',
+      '00002a25-0000-1000-8000-00805f9b34fb': 'Serial Number',
+      '00002a26-0000-1000-8000-00805f9b34fb': 'Firmware Revision',
+      '00002a27-0000-1000-8000-00805f9b34fb': 'Hardware Revision',
+      '00002a00-0000-1000-8000-00805f9b34fb': 'Device Name',
+      '00002a01-0000-1000-8000-00805f9b34fb': 'Appearance'
+    };
+
+    // UI REFS
+    const scanBtn = document.getElementById('scanBtn');
+    const watchBtn = document.getElementById('watchBtn');
+    const locationBtn = document.getElementById('locationBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const filterBtn = document.getElementById('filterBtn');
+    const led = document.getElementById('led');
+    const statusText = document.getElementById('statusText');
+    const log = document.getElementById('log');
+    const serviceList = document.getElementById('serviceList');
+    const uuidFilter = document.getElementById('uuidFilter');
+
+    function addLog(msg, type = 'normal') {
+      const line = document.createElement('div');
+      line.className = 'log-line ' + type;
+      line.textContent = `> ${msg}`;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function setStatus(connected) {
+      if (connected) {
+        led.classList.add('on');
+        statusText.textContent = 'CONNECTED';
+      } else {
+        led.classList.remove('on');
+        statusText.textContent = 'DISCONNECTED';
+      }
+    }
+
+    function formatUuid(uuid) {
+      return knownServices || knownCharacteristics || uuid;
+    }
+
+    function rssiToDistance(rssi) {
+      if (!rssi) return null;
+      const txPower = -59;
+      if (rssi === 0) return -1;
+      const ratio = rssi / txPower;
+      if (ratio < 1.0) return Math.pow(ratio, 10);
+      else return (0.89976) * Math.pow(ratio, 7.7095) + 0.111;
+    }
+
+    function decodeValue(dataView) {
+      const bytes = new Uint8Array(dataView.buffer);
+      const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      let ascii = '';
+      let utf8 = '';
+      try {
+        ascii = new TextDecoder('ascii').decode(bytes).replace(/[^\x20-\x7E]/g, '.');
+        utf8 = new TextDecoder('utf-8').decode(bytes);
+      } catch (e) {}
+
+      let uint8 = bytes[0];
+      let uint16 = bytes.length >= 2? dataView.getUint16(0, true) : null;
+      let uint32 = bytes.length >= 4? dataView.getUint32(0, true) : null;
+
+      return { hex, ascii, utf8, uint8, uint16, uint32, bytes: bytes.length };
+    }
+
+    async function getLocation() {
+      if (!navigator.geolocation) {
+        addLog('ERROR: Geolocation not supported', 'error');
+        return;
+      }
+
+      addLog('REQUESTING_LOCATION_PERMISSION...');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          geoData = {
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            acc: pos.coords.accuracy,
+            time: new Date().toISOString()
+          };
+          document.getElementById('latitude').textContent = geoData.lat.toFixed(6);
+          document.getElementById('longitude').textContent = geoData.lon.toFixed(6);
+          addLog(`LOCATION_ACQUIRED: ${geoData.lat.toFixed(6)}, ${geoData.lon.toFixed(6)} ±${Math.round(geoData.acc)}m`, 'success');
+        },
+        (err) => {
+          addLog(`LOCATION_ERROR: ${err.message}`, 'error');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    async function scan() {
+      if (!navigator.bluetooth) {
+        addLog('ERROR: Web Bluetooth not supported', 'error');
+        return;
+      }
+
+      try {
+        addLog('REQUESTING_DEVICE...');
+        device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: Object.keys(knownServices)
+        });
+
+        addLog(`DEVICE_SELECTED: ${device.name || 'Unnamed'}`, 'success');
+        document.getElementById('deviceName').textContent = device.name || 'Unnamed';
+        document.getElementById('deviceId').textContent = device.id;
+        document.getElementById('scanTime').textContent = new Date().toLocaleTimeString();
+
+        device.addEventListener('gattserverdisconnected', onDisconnected);
+        device.addEventListener('advertisementreceived', handleAdvert);
+
+        addLog('CONNECTING_TO_GATT...');
+        server = await device.gatt.connect();
+        document.getElementById('deviceConnected').textContent = 'TRUE';
+        setStatus(true);
+        disconnectBtn.disabled = false;
+        exportBtn.disabled = false;
+        scanBtn.disabled = true;
+        watchBtn.disabled = true;
+
+        addLog('CONNECTION_ESTABLISHED', 'success');
+        await discoverServices();
+
+      } catch (error) {
+        if (error.name!== 'NotFoundError') {
+          addLog(`ERROR: ${error.message}`, 'error');
+        }
+      }
+    }
+
+    async function watchAdverts() {
+      if (!navigator.bluetooth) {
+        addLog('ERROR: Web Bluetooth not supported', 'error');
+        return;
+      }
+
+      try {
+        addLog('STARTING_ADVERTISEMENT_WATCH...');
+        watchAbort = new AbortController();
+        await navigator.bluetooth.requestLEScan({
+          acceptAllAdvertisements: true,
+          keepRepeatedDevices: true
+        }, { signal: watchAbort.signal });
+
+        navigator.bluetooth.addEventListener('advertisementreceived', handleAdvert);
+        addLog('WATCHING_ADVERTS: RSSI will update radar', 'success');
+        watchBtn.disabled = true;
+      } catch (error) {
+        addLog(`WATCH_ERROR: ${error.message}`, 'error');
+      }
+    }
+
+    function handleAdvert(event) {
+      lastRssi = event.rssi;
+      lastUpdate = Date.now();
+      const dist = rssiToDistance(lastRssi);
+
+      document.getElementById('rssi').textContent = lastRssi + ' dBm';
+      document.getElementById('distance').textContent = dist? `${dist.toFixed(1)}m` : '--';
+      document.getElementById('radarRssi').textContent = lastRssi + ' dBm';
+      document.getElementById('radarDistance').textContent = dist? `${dist.toFixed(1)}m` : '--';
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+      radarBlips.push({
+        rssi: lastRssi,
+        distance: dist,
+        time: Date.now(),
+        alpha: 1.0
+      });
+
+      radarBlips = radarBlips.filter(b => Date.now() - b.time < 3000);
+    }
+
+    async function discoverServices() {
+      try {
+        addLog('DISCOVERING_SERVICES...');
+        services = await server.getPrimaryServices();
+        document.getElementById('serviceCount').textContent = services.length;
+        addLog(`FOUND_${services.length}_SERVICES`, 'success');
+
+        serviceList.innerHTML = '';
+        for (const service of services) {
+          await renderService(service);
+        }
+      } catch (error) {
+        addLog(`SERVICE_DISCOVERY_ERROR: ${error.message}`, 'error');
+      }
+    }
+
+    async function renderService(service) {
+      const serviceDiv = document.createElement('div');
+      serviceDiv.className = 'service-item';
+      serviceDiv.dataset.uuid = service.uuid;
+
+      const chars = await service.getCharacteristics();
+      const serviceName = formatUuid(service.uuid);
+
+      serviceDiv.innerHTML = `
+        <div class="service-header">${serviceName}</div>
+        <div class="service-uuid">${service.uuid}</div>
+        <div class="char-list" id="chars-${service.uuid}"></div>
+      `;
+
+      serviceList.appendChild(serviceDiv);
+
+      for (const char of chars) {
+        await renderCharacteristic(service.uuid, char);
+      }
+    }
+
+    async function renderCharacteristic(serviceUuid, char) {
+      const charList = document.getElementById(`chars-${serviceUuid}`);
+      const charDiv = document.createElement('div');
+      charDiv.className = 'char-item';
+      charDiv.dataset.uuid = char.uuid;
+
+      const props = [];
+      if (char.properties.read) props.push('R');
+      if (char.properties.write) props.push('W');
+      if (char.properties.writeWithoutResponse) props.push('WNR');
+      if (char.properties.notify) props.push('N');
+      if (char.properties.indicate) props.push('I');
+
+      const charName = formatUuid(char.uuid);
+      const charId = `char-${serviceUuid}-${char.uuid}`;
+
+      charDiv.innerHTML = `
+        <div class="char-uuid">${charName}</div>
+        <div class="char-props">PROPS: ${props.join(', ') || 'NONE'} | UUID: ${char.uuid}</div>
+        <div class="char-value" id="${charId}">--</div>
+        <div class="char-controls">
+          ${char.properties.read? `<button class="char-btn" onclick="readChar('${serviceUuid}', '${char.uuid}')">READ</button>` : ''}
+          ${char.properties.notify || char.properties.indicate? `<button class="char-btn" onclick="toggleNotify('${serviceUuid}', '${char.uuid}')">NOTIFY</button>` : ''}
+        </div>
+      `;
+
+      charList.appendChild(charDiv);
+
+      if (char.properties.read) {
+        try {
+          await readChar(serviceUuid, char.uuid, true);
+        } catch (e) {}
+      }
+    }
+
+    window.readChar = async (serviceUuid, charUuid, silent = false) => {
+      try {
+        const service = services.find(s => s.uuid === serviceUuid);
+        const char = await service.getCharacteristic(charUuid);
+        const value = await char.readValue();
+        const decoded = decodeValue(value);
+        const charId = `char-${serviceUuid}-${charUuid}`;
+
+        document.getElementById(charId).innerHTML = `
+          HEX: ${decoded.hex}<br>
+          ASCII: ${decoded.ascii}<br>
+          U8: ${decoded.uint8} | U16: ${decoded.uint16 || 'N/A'} | U32: ${decoded.uint32 || 'N/A'}<br>
+          UTF8: ${decoded.utf8.substring(0, 50)}${decoded.utf8.length > 50? '...' : ''}
+        `;
+
+        if (!silent) addLog(`READ_${charUuid.substring(4, 8)}: ${decoded.hex}`, 'success');
+      } catch (error) {
+        addLog(`READ_ERROR: ${error.message}`, 'error');
+      }
+    };
+
+    window.toggleNotify = async (serviceUuid, charUuid) => {
+      try {
+        const service = services.find(s => s.uuid === serviceUuid);
+        const char = await service.getCharacteristic(charUuid);
+
+        if (char.properties.notify || char.properties.indicate) {
+          await char.startNotifications();
+          char.addEventListener('characteristicvaluechanged', (event) => {
+            const decoded = decodeValue(event.target.value);
+            const charId = `char-${serviceUuid}-${charUuid}`;
+            document.getElementById(charId).innerHTML = `
+              [NOTIFY] HEX: ${decoded.hex}<br>
+              ASCII: ${decoded.ascii}<br>
+              U8: ${decoded.uint8}
+            `;
+            addLog(`NOTIFY_${charUuid.substring(4, 8)}: ${decoded.hex}`, 'success');
+          });
+          addLog(`NOTIFICATIONS_ENABLED: ${charUuid.substring(4, 8)}`, 'success');
+        }
+      } catch (error) {
+        addLog(`NOTIFY_ERROR: ${error.message}`, 'error');
+      }
+    };
+
+    function onDisconnected() {
+      addLog('DEVICE_DISCONNECTED', 'warn');
+      setStatus(false);
+      document.getElementById('deviceConnected').textContent = 'FALSE';
+      disconnectBtn.disabled = true;
+      exportBtn.disabled = true;
+      scanBtn.disabled = false;
+      watchBtn.disabled = false;
+      serviceList.innerHTML = '<div style="text-align:center;color:#004411;font-size:10px;padding:20px;">NO_DEVICE_CONNECTED</div>';
+      if (watchAbort) {
+        watchAbort.abort();
+        watchAbort = null;
+      }
+      server = null;
+      services = [];
+      radarBlips = [];
+    }
+
+    async function disconnect() {
+      if (device && device.gatt.connected) {
+        addLog('DISCONNECTING...');
+        device.gatt.disconnect();
+      }
+      if (watchAbort) {
+        watchAbort.abort();
+        watchAbort = null;
+        watchBtn.disabled = false;
+      }
+    }
+
+    function exportData() {
+      const data = {
+        device: {
+          name: device.name,
+          id: device.id,
+          services: services.length,
+          rssi: lastRssi,
+          estDistance: rssiToDistance(lastRssi)
+        },
+        myLocation: geoData,
+        timestamp: new Date().toISOString(),
+        services: services.map(s => ({
+          uuid: s.uuid,
+          name: formatUuid(s.uuid)
+        }))
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ble_dump_${device.name || 'device'}_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addLog('DATA_EXPORTED', 'success');
+    }
+
+    function filterServices() {
+      const filter = uuidFilter.value.toLowerCase();
+      const items = serviceList.querySelectorAll('.service-item');
+
+      items.forEach(item => {
+        const uuid = item.dataset.uuid.toLowerCase();
+        const name = item.querySelector('.service-header').textContent.toLowerCase();
+        if (!filter || uuid.includes(filter) || name.includes(filter)) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    // RADAR ANIMATION
+    const radarCanvas = document.getElementById('radarCanvas');
+    const radarCtx = radarCanvas.getContext('2d');
+    let radarSize = 400;
+
+    function resizeRadar() {
+      const rect = radarCanvas.parentElement.getBoundingClientRect();
+      radarSize = Math.min(rect.width, rect.height);
+      radarCanvas.width = radarSize;
+      radarCanvas.height = radarSize;
+    }
+    resizeRadar();
+    window.addEventListener('resize', resizeRadar);
+
+    function drawRadar() {
+      radarCtx.fillStyle = '#000';
+      radarCtx.fillRect(0, 0, radarSize, radarSize);
+
+      const centerX = radarSize / 2;
+      const centerY = radarSize / 2;
+      const maxRadius = radarSize / 2 - 10;
+
+      // Grid circles - 1m, 3m, 10m, 30m
+      radarCtx.strokeStyle = '#003311';
+      radarCtx.lineWidth = 1;
+      [0.1, 0.3, 0.6, 1.0].forEach(r => {
+        radarCtx.beginPath();
+        radarCtx.arc(centerX, centerY, maxRadius * r, 0, Math.PI * 2);
+        radarCtx.stroke();
+      });
+
+      // Cross lines
+      radarCtx.beginPath();
+      radarCtx.moveTo(centerX, 10);
+      radarCtx.lineTo(centerX, radarSize - 10);
+      radarCtx.moveTo(10, centerY);
+      radarCtx.lineTo(radarSize - 10, centerY);
+      radarCtx.stroke();
+
+      // Sweep line
+      radarAngle = (radarAngle + 2) % 360;
+      const rad = (radarAngle - 90) * Math.PI / 180;
+      const sweepGradient = radarCtx.createLinearGradient(
+        centerX, centerY,
+        centerX + Math.cos(rad) * maxRadius,
+        centerY + Math.sin(rad) * maxRadius
+      );
+      sweepGradient.addColorStop(0, 'rgba(0,255,65,0)');
+      sweepGradient.addColorStop(1, 'rgba(0,255,65,0.3)');
+      radarCtx.strokeStyle = sweepGradient;
+      radarCtx.lineWidth = 2;
+      radarCtx.beginPath();
+      radarCtx.moveTo(centerX, centerY);
+      radarCtx.lineTo(
+        centerX + Math.cos(rad) * maxRadius,
+        centerY + Math.sin(rad) * maxRadius
+      );
+      radarCtx.stroke();
+
+      // Draw blips
+      const now = Date.now();
+      radarBlips = radarBlips.filter(blip => {
+        const age = now - blip.time;
+        blip.alpha = Math.max(0, 1 - age / 3000);
+        return blip.alpha > 0;
+      });
+
+      radarBlips.forEach(blip => {
+        let radius;
+        if (!blip.distance || blip.distance < 0) radius = maxRadius * 0.95;
+        else if (blip.distance <= 1) radius = maxRadius * 0.1;
+        else if (blip.distance <= 3) radius = maxRadius * 0.3;
+        else if (blip.distance <= 10) radius = maxRadius * 0.6;
+        else radius = maxRadius * 0.95;
+
+        // Fake bearing based on time for visualization
+        const bearing = (blip.time / 100) % 360;
+        const brad = (bearing - 90) * Math.PI / 180;
+
+        const x = centerX + Math.cos(brad) * radius;
+        const y = centerY + Math.sin(brad) * radius;
+
+        radarCtx.fillStyle = `rgba(0, 255, 65, ${blip.alpha})`;
+        radarCtx.shadowBlur = 15 * blip.alpha;
+        radarCtx.shadowColor = '#00ff41';
+        radarCtx.beginPath();
+        radarCtx.arc(x, y, 4, 0, Math.PI * 2);
+        radarCtx.fill();
+        radarCtx.shadowBlur = 0;
+      });
+
+      requestAnimationFrame(drawRadar);
+    }
+    drawRadar();
+
+    scanBtn.addEventListener('click', () => scan());
+    watchBtn.addEventListener('click', watchAdverts);
+    locationBtn.addEventListener('click', getLocation);
+    disconnectBtn.addEventListener('click', disconnect);
+    exportBtn.addEventListener('click', exportData);
+    filterBtn.addEventListener('click', filterServices);
+    uuidFilter.addEventListener('keyup', (e) => { if (e.key === 'Enter') filterServices(); });
+
+    if (!navigator.bluetooth) {
+      addLog('WARNING: Web Bluetooth not available in this browser', 'warn');
+      scanBtn.disabled = true;
+      watchBtn.disabled = true;
+    }
+    if (!navigator.geolocation) {
+      addLog('WARNING: Geolocation not available', 'warn');
+      locationBtn.disabled = true;
+    }
+  </script>
+</body>
+</html>

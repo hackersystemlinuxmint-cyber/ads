@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d12">
+  <title>NEON//LINK — Bluetooth console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root{color-scheme:dark;--bg:#080d12;--panel:#0d151c;--panel-2:#101b23;--line:#1c2a32;--text:#e7f0ed;--muted:#829097;--green:#a7f56b;--cyan:#56e5ce;--mono:'DM Mono',monospace;--sans:'Space Grotesk',sans-serif}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden}
+body:before{position:fixed;inset:0;z-index:-2;content:"";pointer-events:none;background-image:linear-gradient(rgba(115,151,150,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(115,151,150,.035) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(to bottom,black,transparent 82%)}
+.ambient{position:fixed;z-index:-1;border-radius:50%;filter:blur(100px);opacity:.12;pointer-events:none}.ambient-one{width:380px;height:380px;top:65px;left:-180px;background:#4ee5c3}.ambient-two{width:300px;height:300px;right:-180px;top:480px;background:#8ef854}
+.shell{width:min(1120px,calc(100% - 64px));margin:auto}.topbar{height:78px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.08em}.brand{display:flex;align-items:center;gap:11px;color:var(--text);text-decoration:none;font-weight:500;letter-spacing:.12em}.brand-mark{width:30px;height:30px;border:1px solid #456050;color:var(--green);display:grid;place-items:center;font-size:12px}.brand-mark span{color:var(--cyan)}.brand-muted{color:#75827f}.top-status,.section-tag,.player-label{display:flex;align-items:center;gap:9px;color:#a7b4ae}.pulse-dot,.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px #a7f56b8a}.pulse-dot{animation:pulse 2s infinite}.version{color:#68757a}.version span{color:#a7b3ad}
+main{display:block}.hero{min-height:440px;display:grid;grid-template-columns:1.03fr .97fr;align-items:center;border-bottom:1px solid var(--line);position:relative}.hero-copy{padding:60px 0 55px}.eyebrow{display:flex;align-items:center;gap:10px;font:10px var(--mono);letter-spacing:.14em;color:var(--green)}.eyebrow-line{height:1px;width:22px;background:var(--green)}h1{font-size:clamp(44px,6vw,72px);line-height:.99;letter-spacing:-.065em;margin:22px 0 17px;font-weight:600}h1 span,.audio-intro h2 span{color:var(--green)}.hero-text,.audio-intro p{max-width:430px;color:#8f9c9b;font-size:14px;line-height:1.75;margin:0}.connect-button{margin-top:28px;height:48px;padding:0 16px;border:1px solid var(--green);background:var(--green);color:#0a110d;font:500 11px var(--mono);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:11px;transition:all .2s}.connect-button:hover{background:#c0ff91;box-shadow:0 0 25px #a7f56b35;transform:translateY(-1px)}.connect-button:disabled{opacity:.6;cursor:wait;transform:none}.button-icon{font:22px var(--sans);line-height:0}.button-arrow{font-size:15px;margin-left:10px}.compat-note{max-width:340px;font:10px/1.6 var(--mono);color:#647177;margin:13px 0 0}
+.hero-visual{height:360px;position:relative;display:grid;place-items:center;overflow:hidden}.hero-visual:before{content:"";position:absolute;width:330px;height:330px;border-radius:50%;background:radial-gradient(circle,#a7f56b0d 0,transparent 66%)}.orbit{position:absolute;border:1px solid #263a3b;border-radius:50%;transform:rotate(-24deg)}.orbit-outer{width:325px;height:160px}.orbit-inner{width:255px;height:120px;transform:rotate(46deg);border-color:#243735}.signal-ring{position:absolute;width:180px;height:180px;border:1px dashed #2a3a3b;border-radius:50%;animation:rotate 32s linear infinite}.ring-two{width:220px;height:220px;border-color:#1b2a2d;animation-direction:reverse}.core{width:120px;height:120px;border:1px solid #446748;border-radius:50%;background:radial-gradient(circle at center,#162721 0,#0a1113 70%);box-shadow:0 0 50px #a7f56b16,inset 0 0 30px #a7f56b0c;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}.bluetooth-symbol{color:var(--green);font-size:42px;line-height:1}.core-label{font:8px var(--mono);color:#8caa8e;letter-spacing:.12em;margin-top:8px}.orbit-label{position:absolute;z-index:2;font:9px var(--mono);letter-spacing:.1em;color:#81928d;display:flex;flex-direction:column;gap:5px}.orbit-label span{color:var(--green);font-size:10px}.label-top{right:8%;top:62px}.label-bottom{left:8%;bottom:57px}.visual-cross{position:absolute;color:#527161;font:16px var(--mono)}.cross-one{top:73px;left:25%}.cross-two{right:19%;bottom:72px}
+.device-section{padding:46px 0 58px;border-bottom:1px solid var(--line)}.section-heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:22px}.section-heading h2,.audio-intro h2{font-size:27px;letter-spacing:-.04em;margin:9px 0 0;font-weight:500}.count{font:11px var(--mono);color:var(--green);vertical-align:middle;margin-left:5px}.section-tag{font:9px var(--mono);letter-spacing:.1em;color:#899791;padding-bottom:5px}.device-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.empty-state{grid-column:1/-1;min-height:106px;border:1px dashed #28363a;background:#0b1217;display:flex;align-items:center;gap:17px;padding:20px 22px}.empty-icon{width:42px;height:42px;border:1px solid #293b39;color:var(--green);display:grid;place-items:center;font-size:27px}.empty-state strong{font-size:13px;font-weight:500}.empty-state p{font-size:11px;color:#7c8a8b;margin:5px 0 0}.empty-code{margin-left:auto;color:#556267;font:9px var(--mono);letter-spacing:.06em}.empty-code span{color:var(--green);animation:blink 1s steps(2) infinite}.device-card{border:1px solid var(--line);background:linear-gradient(145deg,#101a20,#0c1318);padding:18px 19px;min-width:0}.device-card-head{display:flex;align-items:center;gap:12px}.device-icon{width:38px;height:38px;display:grid;place-items:center;color:var(--green);background:#17251f;border:1px solid #263b31;font-size:18px;flex:none}.device-heading{min-width:0;flex:1}.device-heading h3{font-size:14px;margin:0 0 5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.device-state{font:9px var(--mono);letter-spacing:.08em;color:var(--green)}.disconnect-button{background:transparent;border:1px solid #344148;color:#91a09d;padding:7px 9px;font:9px var(--mono);cursor:pointer}.disconnect-button:hover{border-color:#e37c70;color:#ff9b8b}.device-details{border-top:1px solid #202c31;margin-top:15px;padding-top:12px;display:grid;gap:8px}.detail-row{display:flex;justify-content:space-between;gap:15px;font:10px var(--mono)}.detail-label{color:#748287;flex:none}.detail-value{color:#b7c2bc;text-align:right;overflow-wrap:anywhere}.services-list{line-height:1.6}.device-error{color:#e8b37e}
+.audio-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:60px;padding:58px 0 62px;align-items:center}.audio-intro h2{font-size:32px;margin:12px 0}.audio-intro p{font-size:12px;max-width:290px}.player-card{border:1px solid #243238;background:linear-gradient(145deg,#111c22,#0c1318);padding:20px 22px;box-shadow:0 15px 50px #0002}.player-topline{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid #243137}.player-label,.track-format{font:9px var(--mono);letter-spacing:.1em}.player-label{color:#a5b1aa}.track-format{color:#65747a}.live-dot{width:6px;height:6px}.track-row{display:flex;align-items:center;gap:13px;padding:17px 0 13px}.album-art{position:relative;width:48px;height:48px;background:#182822;border:1px solid #304638;color:var(--green);display:flex;align-items:center;justify-content:center;gap:2px;overflow:hidden;font-size:21px}.album-art i{position:absolute;bottom:0;width:2px;background:#a7f56b80;height:7px}.album-art i:nth-of-type(1){left:4px;height:9px}.album-art i:nth-of-type(2){left:8px;height:15px}.album-art i:nth-of-type(3){left:12px;height:11px}.album-art i:nth-of-type(4){left:16px;height:19px}.album-art i:nth-of-type(5){left:20px;height:8px}.album-art i:nth-of-type(6){left:24px;height:14px}.track-info{min-width:0;flex:1;display:grid;gap:5px}.track-info strong{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.track-info span{font:9px var(--mono);color:#7c898c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.load-button{white-space:nowrap;border:1px solid #394844;padding:9px 10px;color:#b3c0b9;font:9px var(--mono);letter-spacing:.05em;cursor:pointer}.load-button:hover{border-color:var(--green);color:var(--green)}.load-button span{color:var(--green);font-size:14px;margin-left:4px}.timeline-row{display:flex;align-items:center;gap:10px;color:#758287;font:9px var(--mono)}.range{appearance:none;-webkit-appearance:none;height:3px;background:#2a393a;outline:none;cursor:pointer}.range::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 9px #a7f56b5a}.range::-moz-range-thumb{width:9px;height:9px;border:0;border-radius:50%;background:var(--green)}.seek{flex:1}.player-controls{display:flex;align-items:center;justify-content:center;gap:18px;padding:15px 0 7px}.control-button,.play-button{position:relative;cursor:pointer;border:0;color:#b9c7bf;background:transparent}.control-button{font-size:20px;width:30px;height:30px}.control-button small{font:8px var(--mono);position:absolute;top:10px;left:10px}.play-button{width:38px;height:38px;border-radius:50%;background:var(--green);color:#0c160d;font-size:13px;padding-left:3px;box-shadow:0 0 18px #a7f56b25}.play-button:hover{background:#c6ff9e}.volume-control{display:flex;align-items:center;gap:9px;margin-left:auto;color:#9aaa9f}.volume-icon{font-size:15px}.volume-range{width:82px}.volume-control span:last-child{font:9px var(--mono);width:29px;text-align:right;color:#91a09a}.audio-note{font:9px/1.55 var(--mono);color:#68767a;border-top:1px solid #202c31;padding-top:12px;margin:10px 0 0}
+footer{height:66px;display:flex;align-items:center;justify-content:space-between;color:#89958f;font:9px var(--mono);letter-spacing:.08em}.footer-muted{color:#53615e;margin-left:8px}.footer-mark{color:var(--green);margin-left:8px}
+@keyframes rotate{to{transform:rotate(360deg)}}@keyframes pulse{50%{opacity:.45;box-shadow:0 0 4px #a7f56b40}}@keyframes blink{50%{opacity:0}}
+@media(max-width:760px){.shell{width:min(100% - 38px,600px)}.hero{grid-template-columns:1fr;min-height:auto}.hero-copy{padding:55px 0 15px}.hero-visual{height:275px}.orbit-outer{width:285px;height:140px}.orbit-inner{width:230px}.label-top{right:8%;top:35px}.label-bottom{left:5%;bottom:38px}.device-grid{grid-template-columns:1fr}.audio-section{grid-template-columns:1fr;gap:23px;padding:44px 0}.audio-intro p{max-width:420px}.section-heading{align-items:start;gap:15px;flex-direction:column}.section-tag{padding-bottom:0}.empty-state{flex-wrap:wrap}.empty-code{margin-left:59px}.top-status{font-size:9px}.version{font-size:9px}}
+@media(max-width:440px){.shell{width:calc(100% - 30px)}.topbar{height:66px}.brand{font-size:10px}.top-status{gap:6px}.version{display:none}h1{font-size:49px}.hero-text{font-size:13px}.hero-visual{height:245px}.player-card{padding:16px 13px}.track-row{gap:9px}.album-art{width:42px;height:42px}.load-button{padding:8px 7px;font-size:8px}.volume-range{width:55px}.player-controls{gap:10px}.audio-note{font-size:8px}footer{font-size:8px;gap:12px}.footer-muted{display:none}.empty-state{padding:15px}.empty-code{font-size:8px}}
+  </style>
+  <script defer>
+const connectButton = document.getElementById('connectButton');
+const deviceList = document.getElementById('deviceList');
+const emptyState = document.getElementById('emptyState');
+const deviceCount = document.getElementById('deviceCount');
+const browserStatus = document.getElementById('browserStatus');
+const compatNote = document.getElementById('compatNote');
+const devices = new Map();
+
+function updateDeviceCount() {
+  const count = devices.size;
+  deviceCount.textContent = String(count).padStart(2, '0');
+  emptyState.hidden = count > 0;
+}
+
+function detailRow(label, value, extraClass = '') {
+  return `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value ${extraClass}">${value}</span></div>`;
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[character]));
+}
+
+function renderDevice(entry) {
+  const { device, connected, details = {} } = entry;
+  const card = document.getElementById(`device-${entry.key}`);
+  if (!card) return;
+  const serviceText = details.services?.length ? details.services.join(', ') : (details.serviceError ? 'Some services are restricted' : (connected ? 'No readable services reported' : 'Not connected'));
+  const battery = details.battery === undefined ? 'Not available' : `${details.battery}%`;
+  const info = details.info?.length ? details.info.join(' · ') : 'Not provided by device';
+  card.innerHTML = `
+    <div class="device-card-head">
+      <div class="device-icon">⌁</div>
+      <div class="device-heading"><h3>${escapeHTML(device.name || 'Unnamed Bluetooth device')}</h3><span class="device-state">● ${connected ? 'CONNECTED' : 'DISCONNECTED'}</span></div>
+      <button class="disconnect-button" type="button" data-device="${entry.key}">${connected ? 'DISCONNECT' : 'REMOVE'}</button>
+    </div>
+    <div class="device-details">
+      ${detailRow('DEVICE ID', escapeHTML(device.id || 'Unavailable'))}
+      ${detailRow('GATT LINK', connected ? 'Active' : 'Inactive')}
+      ${detailRow('BATTERY', battery)}
+      ${detailRow('DEVICE INFO', escapeHTML(info))}
+      ${detailRow('AVAILABLE SERVICES', escapeHTML(serviceText), 'services-list')}
+    </div>`;
+}
+
+function addDevice(device) {
+  const key = `bt-${Math.random().toString(36).slice(2, 10)}`;
+  const entry = { key, device, connected: Boolean(device.gatt?.connected), details: {} };
+  devices.set(key, entry);
+  const card = document.createElement('article');
+  card.className = 'device-card';
+  card.id = `device-${key}`;
+  deviceList.appendChild(card);
+  renderDevice(entry);
+  updateDeviceCount();
+  device.addEventListener('gattserverdisconnected', () => {
+    entry.connected = false;
+    entry.details.services = [];
+    renderDevice(entry);
+  });
+}
+
+async function readDeviceDetails(entry, server) {
+  const services = [];
+  try {
+    const available = await server.getPrimaryServices();
+    services.push(...available.map(service => service.uuid));
+  } catch (error) {
+    entry.details.serviceError = error.message;
+  }
+  entry.details.services = services;
+
+  try {
+    const batteryService = await server.getPrimaryService('battery_service');
+    const characteristic = await batteryService.getCharacteristic('battery_level');
+    entry.details.battery = (await characteristic.readValue()).getUint8(0);
+  } catch (_) {
+    // Battery details are optional and depend on the device.
+  }
+
+  try {
+    const infoService = await server.getPrimaryService('device_information');
+    const fields = [
+      ['manufacturer_name_string', 'Manufacturer'],
+      ['model_number_string', 'Model'],
+      ['firmware_revision_string', 'Firmware']
+    ];
+    const values = [];
+    for (const [uuid, label] of fields) {
+      try {
+        const characteristic = await infoService.getCharacteristic(uuid);
+        const value = new TextDecoder().decode(await characteristic.readValue());
+        if (value) values.push(`${label}: ${value}`);
+      } catch (_) {
+        // Individual information fields are optional.
+      }
+    }
+    entry.details.info = values;
+  } catch (_) {
+    // Device information is optional and depends on the device.
+  }
+  renderDevice(entry);
+}
+
+connectButton.addEventListener('click', async () => {
+  if (!navigator.bluetooth) {
+    browserStatus.textContent = 'BLUETOOTH NOT AVAILABLE';
+    compatNote.textContent = 'This browser does not support Web Bluetooth. Try a compatible desktop browser on HTTPS or localhost.';
+    return;
+  }
+  connectButton.disabled = true;
+  connectButton.innerHTML = '<span class="button-icon">…</span> SEARCHING FOR DEVICES';
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: ['battery_service', 'device_information']
+    });
+    let entry = [...devices.values()].find(item => item.device.id === device.id);
+    if (!entry) {
+      addDevice(device);
+      entry = [...devices.values()].find(item => item.device.id === device.id);
+    }
+    if (!device.gatt) throw new Error('This device does not provide a GATT connection.');
+    browserStatus.textContent = 'ESTABLISHING LINK';
+    const server = await device.gatt.connect();
+    entry.connected = true;
+    renderDevice(entry);
+    await readDeviceDetails(entry, server);
+    browserStatus.textContent = 'SYSTEM READY';
+  } catch (error) {
+    if (error.name === 'NotFoundError') {
+      browserStatus.textContent = 'SYSTEM READY';
+    } else {
+      browserStatus.textContent = 'CONNECTION ISSUE';
+      compatNote.textContent = error.message || 'Could not connect to that device. Try selecting a Bluetooth GATT device.';
+      window.setTimeout(() => { browserStatus.textContent = 'SYSTEM READY'; }, 3500);
+    }
+  } finally {
+    connectButton.disabled = false;
+    connectButton.innerHTML = '<span class="button-icon">＋</span> CONNECT A DEVICE <span class="button-arrow">↗</span>';
+  }
+});
+
+deviceList.addEventListener('click', event => {
+  const button = event.target.closest('.disconnect-button');
+  if (!button) return;
+  const entry = devices.get(button.dataset.device);
+  if (!entry) return;
+  if (entry.device.gatt?.connected) {
+    entry.device.gatt.disconnect();
+  } else {
+    devices.delete(entry.key);
+    document.getElementById(`device-${entry.key}`)?.remove();
+    updateDeviceCount();
+  }
+});
+
+if (!navigator.bluetooth) {
+  browserStatus.textContent = 'LIMITED BROWSER SUPPORT';
+  compatNote.textContent = 'Bluetooth device access needs Web Bluetooth support and a secure page (HTTPS or localhost).';
+}
+
+const audioFile = document.getElementById('audioFile');
+const audioPlayer = document.getElementById('audioPlayer');
+const playButton = document.getElementById('playButton');
+const seekBar = document.getElementById('seekBar');
+const volumeBar = document.getElementById('volumeBar');
+const volumeValue = document.getElementById('volumeValue');
+const currentTime = document.getElementById('currentTime');
+const duration = document.getElementById('duration');
+let audioURL;
+
+audioPlayer.volume = Number(volumeBar.value);
+
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds)) return '0:00';
+  const minutes = Math.floor(seconds / 60);
+  const remaining = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remaining}`;
+}
+
+audioFile.addEventListener('change', () => {
+  const file = audioFile.files?.[0];
+  if (!file) return;
+  if (audioURL) URL.revokeObjectURL(audioURL);
+  audioURL = URL.createObjectURL(file);
+  audioPlayer.src = audioURL;
+  document.getElementById('trackName').textContent = file.name;
+  document.getElementById('trackSubtitle').textContent = 'LOCAL AUDIO FILE';
+  document.getElementById('trackFormat').textContent = file.type ? file.type.toUpperCase() : 'AUDIO FILE';
+  audioPlayer.play().catch(() => {});
+});
+
+playButton.addEventListener('click', () => {
+  if (!audioPlayer.src) {
+    audioFile.click();
+    return;
+  }
+  if (audioPlayer.paused) audioPlayer.play().catch(() => {});
+  else audioPlayer.pause();
+});
+
+audioPlayer.addEventListener('play', () => {
+  playButton.textContent = 'Ⅱ';
+  playButton.setAttribute('aria-label', 'Pause audio');
+});
+audioPlayer.addEventListener('pause', () => {
+  playButton.textContent = '▶';
+  playButton.setAttribute('aria-label', 'Play audio');
+});
+audioPlayer.addEventListener('loadedmetadata', () => {
+  duration.textContent = formatTime(audioPlayer.duration);
+});
+audioPlayer.addEventListener('timeupdate', () => {
+  currentTime.textContent = formatTime(audioPlayer.currentTime);
+  if (Number.isFinite(audioPlayer.duration) && audioPlayer.duration > 0) {
+    seekBar.value = String((audioPlayer.currentTime / audioPlayer.duration) * 100);
+  }
+});
+seekBar.addEventListener('input', () => {
+  if (Number.isFinite(audioPlayer.duration)) audioPlayer.currentTime = (Number(seekBar.value) / 100) * audioPlayer.duration;
+});
+document.getElementById('backButton').addEventListener('click', () => {
+  if (audioPlayer.src) audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
+});
+document.getElementById('forwardButton').addEventListener('click', () => {
+  if (audioPlayer.src && Number.isFinite(audioPlayer.duration)) {
+    audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 10);
+  }
+});
+volumeBar.addEventListener('input', () => {
+  audioPlayer.volume = Number(volumeBar.value);
+  volumeValue.textContent = `${Math.round(audioPlayer.volume * 100)}%`;
+  document.getElementById('volumeIcon').textContent = audioPlayer.volume === 0 ? '◖' : '◗';
+});
+
+
+   </script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Neon Link home">
+        <span class="brand-mark">N<span>//</span></span>
+        <span>NEON<span class="brand-muted">LINK</span></span>
+      </a>
+      <div class="top-status"><span class="pulse-dot"></span><span id="browserStatus">SYSTEM READY</span></div>
+      <span class="version">BT CONSOLE <span>v1.0</span></span>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span> WIRELESS CONTROL INTERFACE</div>
+          <h1>Make a <span>connection.</span></h1>
+          <p class="hero-text">Discover nearby Bluetooth devices, inspect available device details, and manage your connections from one place.</p>
+          <button class="connect-button" id="connectButton" type="button">
+            <span class="button-icon">＋</span> CONNECT A DEVICE <span class="button-arrow">↗</span>
+          </button>
+          <p class="compat-note" id="compatNote">Device access requires a supported browser and a secure page (HTTPS or localhost).</p>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="orbit orbit-outer"></div><div class="orbit orbit-inner"></div>
+          <div class="signal-ring ring-one"></div><div class="signal-ring ring-two"></div>
+          <div class="core"><span class="bluetooth-symbol">ᛒ</span><span class="core-label">BT / READY</span></div>
+          <span class="orbit-label label-top">SIGNAL<span>2.4 GHz</span></span>
+          <span class="orbit-label label-bottom">LINK STATUS<span>STANDBY</span></span>
+          <span class="visual-cross cross-one">+</span><span class="visual-cross cross-two">+</span>
+        </div>
+      </section>
+
+      <section class="device-section" aria-labelledby="devicesHeading">
+        <div class="section-heading">
+          <div><div class="eyebrow"><span class="eyebrow-line"></span> NETWORK</div><h2 id="devicesHeading">Connected devices <span class="count" id="deviceCount">00</span></h2></div>
+          <span class="section-tag"><span class="live-dot"></span> LIVE CONNECTIONS</span>
+        </div>
+        <div id="deviceList" class="device-grid">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">⌁</div>
+            <div><strong>No devices connected</strong><p>Your paired device details will appear here.</p></div>
+            <span class="empty-code">WAITING_FOR_LINK<span>_</span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="audio-section" aria-labelledby="audioHeading">
+        <div class="audio-intro">
+          <div class="eyebrow"><span class="eyebrow-line"></span> MEDIA DECK</div>
+          <h2 id="audioHeading">Audio <span>control.</span></h2>
+          <p>Load an audio file to play it here. Use your system’s sound settings to choose an output device.</p>
+        </div>
+        <div class="player-card">
+          <div class="player-topline"><span class="player-label"><span class="live-dot"></span> LOCAL PLAYER</span><span class="track-format" id="trackFormat">NO TRACK LOADED</span></div>
+          <div class="track-row">
+            <div class="album-art"><span>♫</span><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="track-info"><strong id="trackName">Nothing playing</strong><span id="trackSubtitle">Choose an audio file to begin</span></div>
+            <label class="load-button" for="audioFile">LOAD AUDIO <span>＋</span></label>
+            <input id="audioFile" type="file" accept="audio/*" hidden>
+          </div>
+          <audio id="audioPlayer" preload="metadata"></audio>
+          <div class="timeline-row"><span id="currentTime">0:00</span><input id="seekBar" class="range seek" type="range" min="0" max="100" value="0" aria-label="Audio position"><span id="duration">0:00</span></div>
+          <div class="player-controls">
+            <button class="control-button" id="backButton" type="button" aria-label="Back 10 seconds">↶<small>10</small></button>
+            <button class="play-button" id="playButton" type="button" aria-label="Play audio">▶</button>
+            <button class="control-button" id="forwardButton" type="button" aria-label="Forward 10 seconds">↷<small>10</small></button>
+            <div class="volume-control"><span class="volume-icon" id="volumeIcon">◖</span><input id="volumeBar" class="range volume-range" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume"><span id="volumeValue">80%</span></div>
+          </div>
+          <p class="audio-note">Bluetooth audio routing is controlled by your browser and operating system. This player controls local audio playback and volume.</p>
+        </div>
+      </section>
+    </main>
+    <footer><span>NEON//LINK <span class="footer-muted">WIRELESS INTERFACE</span></span><span>DEVICE DATA STAYS IN YOUR BROWSER <span class="footer-mark">◆</span></span></footer>
+  </div>
+</body>
+</html>
+

